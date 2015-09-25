@@ -2,17 +2,14 @@ package com.example.laurent.popularmovies;
 
 import android.content.Context;
 import android.net.Uri;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.ImageView;
 
 import com.facebook.drawee.view.SimpleDraweeView;
 
 import java.util.ArrayList;
-import java.util.zip.Inflater;
 
 /**
  * Using Fresco we just need to set a URI for a SimpleDraweeView to have the image downloaded,
@@ -37,10 +34,9 @@ public class ImageListAdapter extends ArrayAdapter<Uri>{
         else {
             LayoutInflater inflater = (LayoutInflater)getContext().getSystemService
                     (Context.LAYOUT_INFLATER_SERVICE);
-            draweeView = (SimpleDraweeView) inflater.inflate(R.layout.grid_item_fresco, parent, false);
+            draweeView = (SimpleDraweeView) inflater.inflate(R.layout.grid_item, parent, false);
         }
         draweeView.setImageURI(this.getItem(position));
-//        new FetchMoviePosterTask(draweeView).execute(this.getItem(position));
         return draweeView;
     }
 

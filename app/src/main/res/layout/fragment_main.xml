@@ -1,15 +1,15 @@
     <GridView xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:tools="http://schemas.android.com/tools"
         android:id="@+id/gridview"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
         android:columnWidth="150dp"
         android:numColumns="auto_fit"
         android:verticalSpacing="0dp"
         android:horizontalSpacing="0dp"
         android:stretchMode="columnWidth"
         android:gravity="center"
+        android:layout_weight="1"
         tools:context=".MainActivityFragment"
-        android:columnCount="2"
         >
     </GridView>

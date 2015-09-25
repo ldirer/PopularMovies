@@ -13,6 +13,10 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+/**
+ * Get the configuration information from the TMDB api.
+ * Turns out we mostly need the base image URI to be able to fetch posters.
+ */
 public class FetchMovieConfiguration {
 
     private final String baseUri = "http://api.themoviedb.org/3/configuration";
@@ -31,7 +35,6 @@ public class FetchMovieConfiguration {
 
         JSONObject imageConfig = configJson.getJSONObject(TMDB_IMAGE_CONFIG);
         String baseImageUri = imageConfig.getString(TMDB_BASE_URI);
-        // TODO: mb get available poster sizes.
         return baseImageUri;
     }
 
@@ -68,9 +71,6 @@ public class FetchMovieConfiguration {
                 return null;
             }
             configJsonStr = buffer.toString();
-
-            // TODO: getConfigFromJson
-//            Save to db?
             imageBaseUri = getConfigFromJson(configJsonStr);
 
 

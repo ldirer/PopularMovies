@@ -56,9 +56,13 @@ public class MovieContract {
         public static final String TABLE_NAME = "movies";
 
         // Column with the foreign key into the location table.
+        public static final String COLUMN_ID = "id";
         public static final String COLUMN_TITLE = "title";
         // Date, stored as long in milliseconds since the epoch
-        public static final String COLUMN_IMAGE_PATH = "image_path";
+        public static final String COLUMN_IMAGE_URI = "image_uri";
+        public static final String COLUMN_SYNOPSIS = "synopsis";
+        public static final String COLUMN_RATING = "user_rating";
+        public static final String COLUMN_RELEASE_DATE = "release_date";
 
         // TODO: smt similar to build uri to image?
 //        public static Uri buildWeatherUri(long id) {
