@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">PopularMovies</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <!--<string name="api_key_tmdb"></string>-->
+
+</resources>
