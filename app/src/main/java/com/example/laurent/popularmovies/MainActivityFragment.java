@@ -36,32 +36,13 @@ public class MainActivityFragment extends Fragment {
 
     private final String LOG_TAG = this.getClass().getSimpleName();
     public ImageListAdapter mImageListAdapter;
-    private ArrayAdapter<String> mMovieListAdapter;
-
-    public MainActivityFragment() {
-        // TODO: Remove this once it's clear WHY THE HELL IT DOES NOT WORK.
-        try {
-//            String filePath = new File("").getAbsolutePath();
-//            File homedir = new File(System.getProperty("user.home"));
-//            Log.e(LOG_TAG, filePath);
-//            Log.e(LOG_TAG, homedir.getAbsolutePath());
-//            File file = new File("tmdb_api_key.txt");
-//            Log.e(LOG_TAG, file.getAbsolutePath());
-            FileReader reader = new FileReader("/home/laurent/AndroidStudioProjects/PopularMovies/tmdb_api_key.txt");
-//            FileReader reader = new FileReader("/tmdb_api_key");
-//            API_KEY = reader.toString();
-        }
-        catch (FileNotFoundException e) {
-            Log.e(LOG_TAG, "No API key found for the movie database!!");
-        }
-    }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         GridView gridView = (GridView)inflater.inflate(R.layout.fragment_main, container, false);
-        mImageListAdapter = new ImageListAdapter(getActivity(), R.layout.grid_item, new ArrayList<String>());
+        mImageListAdapter = new ImageListAdapter(getActivity(), R.layout.grid_item_fresco, new ArrayList<Uri>());
+
         // The task populates the adapter with image urls.
         new FetchMovieDataTask().execute();
 
@@ -74,6 +55,11 @@ public class MainActivityFragment extends Fragment {
 
         private final String LOG_TAG = this.getClass().getSimpleName();
         private String baseUri = "https://api.themoviedb.org/3/discover/movie";
+
+
+        // Parameters to get images from tmdb.
+        private String size = "w500";
+        private String baseImageUri;
 
         /**
          * Take the String representing the movies in JSON Format and
@@ -160,13 +146,16 @@ public class MainActivityFragment extends Fragment {
                 movies = getMovieDataFromJson(moviesJsonStr);
     //            Save to db?
 
-
             } catch (IOException | JSONException e) {
                 e.printStackTrace();
             } finally {
                 if (urlConnection != null) {
                     urlConnection.disconnect();
                 }
+            }
+            
+            if(baseImageUri == null) {
+                baseImageUri = new FetchMovieConfiguration().getImageBaseUri();
             }
             return movies;
         }
@@ -178,8 +167,19 @@ public class MainActivityFragment extends Fragment {
                 mImageListAdapter.clear();
             }
             for (ContentValues movie : movieValues) {
-                mImageListAdapter.add(movie.getAsString(MovieContract.MovieEntry.COLUMN_IMAGE_PATH));
+                Uri imageUri = getImageUriFromPath(movie.getAsString(MovieContract.MovieEntry.COLUMN_IMAGE_PATH));
+                mImageListAdapter.add(imageUri);
             }
+        }
+
+        public Uri getImageUriFromPath(String posterHash) {
+            posterHash = posterHash.replaceAll("^/", "");
+            Uri posterUri = Uri.parse(baseImageUri).buildUpon()
+                    .appendPath(size)
+                    .appendEncodedPath(posterHash)
+                    .build();
+            Log.d(LOG_TAG, String.format("Poster Uri: %s", posterUri.toString()));
+            return posterUri;
         }
     }
 }
