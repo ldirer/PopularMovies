@@ -67,20 +67,12 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         Intent intent = getActivity().getIntent();
         Log.v(LOG_TAG, "Movie URI: " + intent.getDataString());
 
-        // TODO: I did not find a light way to map uri movies/13412 to the right movie so it's done here.
-        Uri uri = intent.getData();
-        long movieId = MovieContract.MovieEntry.getIdFromUri(uri);
-
-        String[] selectionArgs = new String[] {
-                (String.format("%d", movieId))
-        };
-
         return new CursorLoader(
                 getActivity(),
                 intent.getData(),
                 DETAIL_COLUMNS,
-                MovieContract.MovieEntry.TABLE_NAME + "." + MovieContract.MovieEntry.COLUMN_ID + " = ?",
-                selectionArgs,
+                null,
+                null,
                 null
                 );
     }

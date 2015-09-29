@@ -25,11 +25,14 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.graphics.Movie;
 import android.net.Uri;
+import android.support.annotation.NonNull;
+import android.util.Log;
 
 public class MovieProvider extends ContentProvider {
 
     // The URI Matcher used by this content provider.
     private static final UriMatcher sUriMatcher = buildUriMatcher();
+    private static final String LOG_TAG = MovieProvider.class.getSimpleName();
     private MovieDbHelper mOpenHelper;
 
 
@@ -42,7 +45,7 @@ public class MovieProvider extends ContentProvider {
 
     private static final SQLiteQueryBuilder sMovieQueryBuilder;
 
-    static{
+    static {
         sMovieQueryBuilder = new SQLiteQueryBuilder();
         sMovieQueryBuilder.setTables(MovieContract.MovieEntry.TABLE_NAME);
     }
@@ -65,7 +68,9 @@ public class MovieProvider extends ContentProvider {
 
         // For each type of URI you want to add, create a corresponding code.
         matcher.addURI(authority, MovieContract.PATH_MOVIES, MOVIES);
-        matcher.addURI(authority, MovieContract.PATH_MOVIES + "/*", MOVIES);
+        // TODO: clarify below line.
+        // Here I'd like to map the Uris to MOVIE. However that would cause A LOT of code duplication!! How to go about this?
+        matcher.addURI(authority, MovieContract.PATH_MOVIES + "/*", MOVIE);
         return matcher;
     }
 
@@ -109,12 +114,22 @@ public class MovieProvider extends ContentProvider {
         Cursor retCursor;
         switch (sUriMatcher.match(uri)) {
             // "weather/*/*"
-            case MOVIES:
-            {
+            case MOVIES: {
                 retCursor = mOpenHelper.getReadableDatabase().query(
                         MovieContract.MovieEntry.TABLE_NAME,
                         projection,
                         selection,
+                        selectionArgs,
+                        null,
+                        null,
+                        sortOrder);
+                break;
+            }
+            case MOVIE: {
+                retCursor = mOpenHelper.getReadableDatabase().query(
+                        MovieContract.MovieEntry.TABLE_NAME,
+                        projection,
+                        getSelectionWithIdFromUri(uri, selection),
                         selectionArgs,
                         null,
                         null,
@@ -140,7 +155,7 @@ public class MovieProvider extends ContentProvider {
         switch (match) {
             case MOVIES: {
                 long _id = db.insertWithOnConflict(MovieContract.MovieEntry.TABLE_NAME, null, values, SQLiteDatabase.CONFLICT_REPLACE);
-                if ( _id > 0 )
+                if (_id > 0)
                     returnUri = MovieContract.MovieEntry.buildMovieUri(_id);
                 else
                     throw new android.database.SQLException("Failed to insert row into " + uri);
@@ -154,28 +169,28 @@ public class MovieProvider extends ContentProvider {
     }
 
 
-    // TODO: how to expose this method with the ContentProvider only offering insert/bulkInsert methods?
-    public Uri insertWithOnConflict(Uri uri, ContentValues values, int conflictAlgorithm) {
-//        http://stackoverflow.com/questions/19337029/insert-if-not-exists-statement-in-sqlite/19343100#19343100
-        final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
-        final int match = sUriMatcher.match(uri);
-        Uri returnUri;
-
-        switch (match) {
-            case MOVIES: {
-                long _id = db.insertWithOnConflict(MovieContract.MovieEntry.TABLE_NAME, null, values, conflictAlgorithm); // SQLiteDatabase.CONFLICT_IGNORE);
-                if ( _id > 0 )
-                    returnUri = MovieContract.MovieEntry.buildMovieUri(_id);
-                else
-                    throw new android.database.SQLException("Failed to insert row into " + uri);
-                break;
-            }
-            default:
-                throw new UnsupportedOperationException("Unknown uri: " + uri);
-        }
-        getContext().getContentResolver().notifyChange(uri, null);
-        return returnUri;
-    }
+//    // TODO: how to expose this method with the ContentProvider only offering insert/bulkInsert methods?
+//    public Uri insertWithOnConflict(Uri uri, ContentValues values, int conflictAlgorithm) {
+////        http://stackoverflow.com/questions/19337029/insert-if-not-exists-statement-in-sqlite/19343100#19343100
+//        final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
+//        final int match = sUriMatcher.match(uri);
+//        Uri returnUri;
+//
+//        switch (match) {
+//            case MOVIES: {
+//                long _id = db.insertWithOnConflict(MovieContract.MovieEntry.TABLE_NAME, null, values, conflictAlgorithm); // SQLiteDatabase.CONFLICT_IGNORE);
+//                if ( _id > 0 )
+//                    returnUri = MovieContract.MovieEntry.buildMovieUri(_id);
+//                else
+//                    throw new android.database.SQLException("Failed to insert row into " + uri);
+//                break;
+//            }
+//            default:
+//                throw new UnsupportedOperationException("Unknown uri: " + uri);
+//        }
+//        getContext().getContentResolver().notifyChange(uri, null);
+//        return returnUri;
+//    }
 
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
@@ -183,9 +198,14 @@ public class MovieProvider extends ContentProvider {
         final int match = sUriMatcher.match(uri);
         int rowsDeleted;
         // this makes delete all rows return the number of rows deleted
-        if ( null == selection ) selection = "1";
+        if (null == selection) selection = "1";
         switch (match) {
             case MOVIES:
+                rowsDeleted = db.delete(
+                        MovieContract.MovieEntry.TABLE_NAME, selection, selectionArgs);
+                break;
+            case MOVIE:
+                selection = getSelectionWithIdFromUri(uri, selection);
                 rowsDeleted = db.delete(
                         MovieContract.MovieEntry.TABLE_NAME, selection, selectionArgs);
                 break;
@@ -212,13 +232,34 @@ public class MovieProvider extends ContentProvider {
                 rowsUpdated = db.update(MovieContract.MovieEntry.TABLE_NAME, values, selection,
                         selectionArgs);
                 break;
+            case MOVIE:
+                // We are updating a single row.
+                selection = getSelectionWithIdFromUri(uri, selection);
+                rowsUpdated = db.update(MovieContract.MovieEntry.TABLE_NAME, values, selection,
+                        selectionArgs);
+                Log.v(LOG_TAG, String.format("Number of rows updated: %d", rowsUpdated));
+                break;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
         if (rowsUpdated != 0) {
             getContext().getContentResolver().notifyChange(uri, null);
         }
+
         return rowsUpdated;
+    }
+
+
+    private String getSelectionWithIdFromUri(Uri uri, String selection) {
+        long _id = MovieContract.MovieEntry.getIdFromUri(uri);
+        String selectionWithId = String.format("%s.%s = %d",
+                MovieContract.MovieEntry.TABLE_NAME,
+                MovieContract.MovieEntry.COLUMN_ID,
+                _id);
+        if (selection != null && !selection.isEmpty()) {
+            selectionWithId = selection + " AND " + selectionWithId;
+        }
+        return selectionWithId;
     }
 
     @Override
@@ -271,6 +312,7 @@ public class MovieProvider extends ContentProvider {
                 return super.bulkInsert(uri, values);
         }
     }
+
     // You do not need to call this method. This is a method specifically to assist the testing
     // framework in running smoothly. You can read more at:
     // http://developer.android.com/reference/android/content/ContentProvider.html#shutdown()

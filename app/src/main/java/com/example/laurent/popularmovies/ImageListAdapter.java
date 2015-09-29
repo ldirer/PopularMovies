@@ -40,8 +40,6 @@ public class ImageListAdapter extends CursorAdapter {
     @Override
     public void bindView(View view, Context context, Cursor cursor) {
         ViewHolder viewHolder = (ViewHolder) view.getTag();
-        Log.v(LOG_TAG, String.format("In bindView, position in cursor: %d", cursor.getPosition()));
-        Log.v(LOG_TAG, "Image uri: " + cursor.getString(MainActivityFragment.COL_MOVIE_IMAGE_URI));
         viewHolder.posterView.setImageURI(Uri.parse(cursor.getString(MainActivityFragment.COL_MOVIE_IMAGE_URI)));
     }
 

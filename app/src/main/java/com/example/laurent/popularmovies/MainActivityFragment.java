@@ -62,6 +62,8 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             MovieContract.MovieEntry.COLUMN_TITLE,
             MovieContract.MovieEntry.COLUMN_RATING,
             MovieContract.MovieEntry.COLUMN_POPULARITY,
+            MovieContract.MovieEntry.COLUMN_IN_LIST_POPULARITY,
+            MovieContract.MovieEntry.COLUMN_IN_LIST_RATING,
     };
     static final int COL_MOVIE_ID = 0;
     static final int COL_MOVIE_RELEASE_DATE = 1;
@@ -70,6 +72,8 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     static final int COL_MOVIE_TITLE = 4;
     static final int COL_MOVIE_RATING = 5;
     static final int COL_MOVIE_POPULARITY = 6;
+    static final int COL_MOVIE_IN_LIST_POPULARITY = 7;
+    static final int COL_MOVIE_IN_LIST_RATING = 8;
 
 
 
@@ -157,21 +161,25 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     public android.support.v4.content.Loader<Cursor> onCreateLoader(int id, Bundle args) {
         Uri moviesUri = MovieContract.MovieEntry.buildMoviesUri();
         String sortBy;
+        String selection;
+
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
 
         String[] sortByValues = getResources().getStringArray(R.array.sort_by_values);
         if (sortByValues[prefs.getInt(getString(R.string.pref_sort_by_key), 0)]
                 .equals(getString(R.string.sort_order_popularity))) {
             sortBy = MovieContract.MovieEntry.COLUMN_POPULARITY + " DESC";
+            selection = MovieContract.MovieEntry.COLUMN_IN_LIST_POPULARITY + " = 1";
         }
         else {
             sortBy = MovieContract.MovieEntry.COLUMN_RATING + " DESC";
+            selection = MovieContract.MovieEntry.COLUMN_IN_LIST_RATING + " = 1";
         }
         return new CursorLoader(
                 getContext(),
                 moviesUri,
                 MOVIE_COLUMNS,
-                null,
+                selection,
                 null,
                 sortBy
         );
@@ -213,10 +221,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 //        vote_average.desc
 //        vote_count.asc
 //        vote_count.desc
-
-
-        public FetchMovieDataTask() {
-        }
 
         public FetchMovieDataTask(String sortBy) {
             this.sortBy = sortBy;
@@ -311,12 +315,24 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 }
                 moviesJsonStr = buffer.toString();
 
-                // TODO:Save to db?
+                // Save to database
                 movies = getMovieDataFromJson(moviesJsonStr);
                 for (int i = 0; i < movies.toArray().length; i++) {
                     ContentValues movie = movies.get(i);
                     Uri insertedMovie = getContext().getContentResolver().insert(
                             MovieContract.MovieEntry.CONTENT_URI, movie);
+                    Log.v(LOG_TAG, "Inserted movie uri: " + insertedMovie.toString());
+
+                    // We update the fields to say in which list(s) the movie should show up.
+                    ContentValues inListValue = new ContentValues();
+                    if (this.sortBy.equals(getString(R.string.sort_order_popularity))){
+                        inListValue.put(MovieContract.MovieEntry.COLUMN_IN_LIST_POPULARITY, 1);
+                        getContext().getContentResolver().update(insertedMovie, inListValue, null, null);
+                    }
+                    else {
+                        inListValue.put(MovieContract.MovieEntry.COLUMN_IN_LIST_RATING, 1);
+                        getContext().getContentResolver().update(insertedMovie, inListValue, null, null);
+                    }
                 }
 
             } catch (IOException | JSONException e) {
