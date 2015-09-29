@@ -13,5 +13,6 @@
     <string name="sort_order_label_popularity">Popularity</string>
     <string name="sort_order_label_rating">User rating</string>
     <string name="pref_sort_by_key">sort_by_index</string>
+    <string name="title_activity_detail">DetailActivity</string>
 
 </resources>

@@ -1,12 +1,18 @@
 package com.example.laurent.popularmovies;
 
 import android.content.ContentValues;
+import android.content.Context;
+import android.content.Intent;
+import android.content.Loader;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
 import android.support.v4.view.MenuItemCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -17,7 +23,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CursorAdapter;
 import android.widget.GridView;
+import android.widget.SimpleCursorAdapter;
 import android.widget.Spinner;
 
 import com.example.laurent.popularmovies.data.MovieContract;
@@ -38,10 +46,38 @@ import java.util.Vector;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class MainActivityFragment extends Fragment {
+public class MainActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>{
 
     private final String LOG_TAG = this.getClass().getSimpleName();
     public ImageListAdapter mImageListAdapter;
+    public CursorAdapter mMovieDetailAdapter;
+
+    private static final int MOVIE_LOADER = 0;
+
+    private static final String[] MOVIE_COLUMNS = {
+            MovieContract.MovieEntry.COLUMN_ID,
+            MovieContract.MovieEntry.COLUMN_RELEASE_DATE,
+            MovieContract.MovieEntry.COLUMN_IMAGE_URI,
+            MovieContract.MovieEntry.COLUMN_SYNOPSIS,
+            MovieContract.MovieEntry.COLUMN_TITLE,
+            MovieContract.MovieEntry.COLUMN_RATING,
+            MovieContract.MovieEntry.COLUMN_POPULARITY,
+    };
+    static final int COL_MOVIE_ID = 0;
+    static final int COL_MOVIE_RELEASE_DATE = 1;
+    static final int COL_MOVIE_IMAGE_URI = 2;
+    static final int COL_MOVIE_SYNOPSIS = 3;
+    static final int COL_MOVIE_TITLE = 4;
+    static final int COL_MOVIE_RATING = 5;
+    static final int COL_MOVIE_POPULARITY = 6;
+
+
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+        getLoaderManager().initLoader(MOVIE_LOADER, null, this);
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -53,11 +89,25 @@ public class MainActivityFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         GridView gridView = (GridView)inflater.inflate(R.layout.fragment_main, container, false);
-        mImageListAdapter = new ImageListAdapter(getActivity(), R.layout.grid_item, new ArrayList<Uri>());
 
+        mImageListAdapter = new ImageListAdapter(getActivity(), null, 0);
         // The task populates the adapter with image urls.
-        new FetchMovieDataTask().execute();
+        // TODO: remove this, it's done in onItemSelected for the sort by button.
+//        new FetchMovieDataTask().execute();
         gridView.setAdapter(mImageListAdapter);
+        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                // CursorAdapter returns a cursor at the correct position for getItem(), or null
+                // if it cannot seek to that position.
+                Cursor cursor = (Cursor) parent.getItemAtPosition(position);
+                if (cursor != null) {
+                    startActivity(new Intent(getActivity(), DetailActivity.class)
+                            .setData(MovieContract.MovieEntry.buildMovieUri(cursor.getLong(COL_MOVIE_ID))));
+                }
+            }
+        });
         return gridView;
     }
 
@@ -80,22 +130,62 @@ public class MainActivityFragment extends Fragment {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 // Using 0 to specify permissions, static constants are deprecated. NOT IDEAL.
-                SharedPreferences.Editor editor = getActivity().getPreferences(0).edit();
+                SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(getContext()).edit();
 
                 editor.putInt(getString(R.string.pref_sort_by_key), position);
                 editor.apply();
 
                 // TODO: This is super fragile: we depend on the order of the resources arrays being consistent...
                 String[] sortByValues = getResources().getStringArray(R.array.sort_by_values);
-
-                // Trigger data reload.
-                new FetchMovieDataTask(sortByValues[position]).execute();
+                onSortByChanged(sortByValues[position]);
             }
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
             }
         });
+    }
+
+    private void onSortByChanged(String sortByTmdb) {
+        // Trigger data reload.
+        new FetchMovieDataTask(sortByTmdb).execute();
+        getLoaderManager().restartLoader(MOVIE_LOADER, null, this);
+    }
+
+
+    @Override
+    public android.support.v4.content.Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        Uri moviesUri = MovieContract.MovieEntry.buildMoviesUri();
+        String sortBy;
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+
+        String[] sortByValues = getResources().getStringArray(R.array.sort_by_values);
+        if (sortByValues[prefs.getInt(getString(R.string.pref_sort_by_key), 0)]
+                .equals(getString(R.string.sort_order_popularity))) {
+            sortBy = MovieContract.MovieEntry.COLUMN_POPULARITY + " DESC";
+        }
+        else {
+            sortBy = MovieContract.MovieEntry.COLUMN_RATING + " DESC";
+        }
+        return new CursorLoader(
+                getContext(),
+                moviesUri,
+                MOVIE_COLUMNS,
+                null,
+                null,
+                sortBy
+        );
+    }
+
+    @Override
+    public void onLoadFinished(android.support.v4.content.Loader<Cursor> loader, Cursor data) {
+        Log.v(LOG_TAG, "onLoadFinished");
+        mImageListAdapter.swapCursor(data);
+    }
+
+    @Override
+    public void onLoaderReset(android.support.v4.content.Loader<Cursor> loader) {
+        mImageListAdapter.swapCursor(null);
     }
 
     public class FetchMovieDataTask extends AsyncTask<Void, Void, Vector<ContentValues>> {
@@ -107,7 +197,7 @@ public class MainActivityFragment extends Fragment {
         // Parameters to get images from tmdb.
         private String size = "w500";
         private String baseImageUri;
-        private String sortBy = "popularity.desc";
+        private String sortBy;
 
 //        popularity.asc
 //        popularity.desc
@@ -147,6 +237,7 @@ public class MainActivityFragment extends Fragment {
             final String TMDB_SYNOPSIS = "overview";
             final String TMDB_RATING = "vote_average";
             final String TMDB_RELEASE_DATE = "release_date";
+            final String TMDB_POPULARITY = "popularity";
             final String TMDB_ID = "id";
 
             JSONObject moviesJson = new JSONObject(moviesJsonStr);
@@ -162,6 +253,7 @@ public class MainActivityFragment extends Fragment {
                 String synopsis = movie.getString(TMDB_SYNOPSIS);
                 String rating = movie.getString(TMDB_RATING);
                 String releaseDate = movie.getString(TMDB_RELEASE_DATE);
+                String popularity = movie.getString(TMDB_POPULARITY);
 
                 ContentValues movieValues = new ContentValues();
                 movieValues.put(MovieContract.MovieEntry.COLUMN_ID, movieId);
@@ -170,6 +262,7 @@ public class MainActivityFragment extends Fragment {
                 movieValues.put(MovieContract.MovieEntry.COLUMN_SYNOPSIS, synopsis);
                 movieValues.put(MovieContract.MovieEntry.COLUMN_RATING, rating);
                 movieValues.put(MovieContract.MovieEntry.COLUMN_RELEASE_DATE, releaseDate);
+                movieValues.put(MovieContract.MovieEntry.COLUMN_POPULARITY, popularity);
 
                 cVVector.add(movieValues);
             }
@@ -220,6 +313,11 @@ public class MainActivityFragment extends Fragment {
 
                 // TODO:Save to db?
                 movies = getMovieDataFromJson(moviesJsonStr);
+                for (int i = 0; i < movies.toArray().length; i++) {
+                    ContentValues movie = movies.get(i);
+                    Uri insertedMovie = getContext().getContentResolver().insert(
+                            MovieContract.MovieEntry.CONTENT_URI, movie);
+                }
 
             } catch (IOException | JSONException e) {
                 e.printStackTrace();
@@ -235,13 +333,13 @@ public class MainActivityFragment extends Fragment {
         @Override
         protected void onPostExecute(Vector<ContentValues> movieValues) {
             super.onPostExecute(movieValues);
-            if (movieValues != null) {
-                mImageListAdapter.clear();
-            }
-            for (ContentValues movie : movieValues) {
-                Uri imageUri = Uri.parse(movie.getAsString(MovieContract.MovieEntry.COLUMN_IMAGE_URI));
-                mImageListAdapter.add(imageUri);
-            }
+//            if (movieValues != null) {
+//                mImageListAdapter.clear();
+//            }
+//            for (ContentValues movie : movieValues) {
+//                Uri imageUri = Uri.parse(movie.getAsString(MovieContract.MovieEntry.COLUMN_IMAGE_URI));
+//                mImageListAdapter.add(imageUri);
+//            }
         }
 
         public String getImageUriFromPath(String posterHash) {

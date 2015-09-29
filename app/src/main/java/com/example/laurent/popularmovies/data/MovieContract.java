@@ -20,6 +20,7 @@ import android.content.ContentUris;
 import android.net.Uri;
 import android.provider.BaseColumns;
 import android.text.format.Time;
+import android.util.Log;
 
 /**
  * Defines table and column names for the weather database.
@@ -45,6 +46,8 @@ public class MovieContract {
     /* Inner class that defines the table contents of the weather table */
     public static final class MovieEntry implements BaseColumns {
 
+        private static final String LOG_TAG = MovieEntry.class.getSimpleName();
+
         public static final Uri CONTENT_URI =
                 BASE_CONTENT_URI.buildUpon().appendPath(PATH_MOVIES).build();
 
@@ -56,13 +59,27 @@ public class MovieContract {
         public static final String TABLE_NAME = "movies";
 
         // Column with the foreign key into the location table.
-        public static final String COLUMN_ID = "id";
+        public static final String COLUMN_ID = "_id";
         public static final String COLUMN_TITLE = "title";
         // Date, stored as long in milliseconds since the epoch
         public static final String COLUMN_IMAGE_URI = "image_uri";
         public static final String COLUMN_SYNOPSIS = "synopsis";
         public static final String COLUMN_RATING = "user_rating";
         public static final String COLUMN_RELEASE_DATE = "release_date";
+        public static final String COLUMN_POPULARITY = "popularity";
+
+        public static Uri buildMovieUri(long id) {
+            return ContentUris.withAppendedId(CONTENT_URI, id);
+        }
+
+        public static Uri buildMoviesUri() {
+            Log.d(LOG_TAG, String.format("Movies Uri: %s", CONTENT_URI.toString()));
+            return CONTENT_URI.buildUpon().build();
+        }
+
+        public static long getIdFromUri(Uri uri) {
+            return Long.parseLong(uri.getPathSegments().get(1));
+        }
 
         // TODO: smt similar to build uri to image?
 //        public static Uri buildWeatherUri(long id) {
