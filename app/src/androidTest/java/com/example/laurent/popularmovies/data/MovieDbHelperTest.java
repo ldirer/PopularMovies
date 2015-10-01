@@ -43,14 +43,15 @@ public class MovieDbHelperTest extends AndroidTestCase {
         // Build a HashSet of all of the column names we want to look for
         final HashSet<String> locationColumnHashSet = new HashSet<>();
         locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_ID);
+        locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_IN_LIST_POPULARITY);
+        locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_IN_LIST_RATING);
+        locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_INSERT_ORDER);
         locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_IMAGE_URI);
         locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_POPULARITY);
         locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_RATING);
         locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_RELEASE_DATE);
         locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_SYNOPSIS);
         locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_TITLE);
-        locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_IN_LIST_POPULARITY);
-        locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_IN_LIST_RATING);
 
         int columnNameIndex = c.getColumnIndex("name");
         do {

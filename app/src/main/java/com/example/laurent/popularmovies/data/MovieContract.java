@@ -60,6 +60,10 @@ public class MovieContract {
 
         // Column with the foreign key into the location table.
         public static final String COLUMN_ID = "_id";
+        // We use the rowid that is a default autoincremented field to get the insertion order.
+        // Woops: this is overriden by any INTEGER PRIMARY KEY column.
+//        public static final String COLUMN_INSERT_ORDER = "rowid";
+        public static final String COLUMN_INSERT_ORDER = "insert_id";
         public static final String COLUMN_TITLE = "title";
         // Date, stored as long in milliseconds since the epoch
         public static final String COLUMN_IMAGE_URI = "image_uri";

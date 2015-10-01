@@ -154,7 +154,23 @@ public class MovieProvider extends ContentProvider {
 
         switch (match) {
             case MOVIES: {
-                long _id = db.insertWithOnConflict(MovieContract.MovieEntry.TABLE_NAME, null, values, SQLiteDatabase.CONFLICT_REPLACE);
+                // I wanted to use the following, but the behavior about the returned id does not seem to match the documented one.
+                // https://code.google.com/p/android/issues/detail?id=13045
+//                long _id = db.insertWithOnConflict(MovieContract.MovieEntry.TABLE_NAME, null, values,
+//                        SQLiteDatabase.CONFLICT_IGNORE);
+
+                // We first try to select a record with the given id. If it exists we don't do anything, otherwise we insert.
+                // Basically doing db.insertWithOnConflict with CONFLICT_IGNORE should do.
+                long _id;
+                Cursor c = db.query(MovieContract.MovieEntry.TABLE_NAME, new String[]{MovieContract.MovieEntry.COLUMN_ID},
+                        MovieContract.MovieEntry.COLUMN_ID + " = " + values.getAsString(MovieContract.MovieEntry.COLUMN_ID), null, null, null, null);
+                if (c.moveToFirst()) {
+                    assert c.getCount() == 1;
+                    _id = c.getLong(0);
+                }
+                else {
+                    _id = db.insert(MovieContract.MovieEntry.TABLE_NAME, null, values);
+                }
                 if (_id > 0)
                     returnUri = MovieContract.MovieEntry.buildMovieUri(_id);
                 else

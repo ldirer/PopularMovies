@@ -22,6 +22,7 @@ public class MovieDbHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         final String createMovieTable = "CREATE TABLE " + MovieEntry.TABLE_NAME + "(" +
                 MovieEntry.COLUMN_ID + " INTEGER PRIMARY KEY NOT NULL, " +
+                MovieEntry.COLUMN_INSERT_ORDER + " INTEGER UNIQUE NOT NULL, " +
                 MovieEntry.COLUMN_TITLE + " TEXT NOT NULL, " +
                 MovieEntry.COLUMN_RATING + " DOUBLE NOT NULL, " +
                 MovieEntry.COLUMN_RELEASE_DATE + " TEXT NOT NULL, " +

@@ -21,10 +21,12 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CursorAdapter;
 import android.widget.GridView;
+import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.Spinner;
 
@@ -50,12 +52,12 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
     private final String LOG_TAG = this.getClass().getSimpleName();
     public ImageListAdapter mImageListAdapter;
-    public CursorAdapter mMovieDetailAdapter;
 
     private static final int MOVIE_LOADER = 0;
 
     private static final String[] MOVIE_COLUMNS = {
             MovieContract.MovieEntry.COLUMN_ID,
+            MovieContract.MovieEntry.COLUMN_INSERT_ORDER,
             MovieContract.MovieEntry.COLUMN_RELEASE_DATE,
             MovieContract.MovieEntry.COLUMN_IMAGE_URI,
             MovieContract.MovieEntry.COLUMN_SYNOPSIS,
@@ -66,14 +68,15 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             MovieContract.MovieEntry.COLUMN_IN_LIST_RATING,
     };
     static final int COL_MOVIE_ID = 0;
-    static final int COL_MOVIE_RELEASE_DATE = 1;
-    static final int COL_MOVIE_IMAGE_URI = 2;
-    static final int COL_MOVIE_SYNOPSIS = 3;
-    static final int COL_MOVIE_TITLE = 4;
-    static final int COL_MOVIE_RATING = 5;
-    static final int COL_MOVIE_POPULARITY = 6;
-    static final int COL_MOVIE_IN_LIST_POPULARITY = 7;
-    static final int COL_MOVIE_IN_LIST_RATING = 8;
+    static final int COL_MOVIE_INSERT_ORDER = 1;
+    static final int COL_MOVIE_RELEASE_DATE = 2;
+    static final int COL_MOVIE_IMAGE_URI = 3;
+    static final int COL_MOVIE_SYNOPSIS = 4;
+    static final int COL_MOVIE_TITLE = 5;
+    static final int COL_MOVIE_RATING = 6;
+    static final int COL_MOVIE_POPULARITY = 7;
+    static final int COL_MOVIE_IN_LIST_POPULARITY = 8;
+    static final int COL_MOVIE_IN_LIST_RATING = 9;
 
 
 
@@ -96,8 +99,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
         mImageListAdapter = new ImageListAdapter(getActivity(), null, 0);
         // The task populates the adapter with image urls.
-        // TODO: remove this, it's done in onItemSelected for the sort by button.
-//        new FetchMovieDataTask().execute();
         gridView.setAdapter(mImageListAdapter);
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
@@ -112,9 +113,12 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 }
             }
         });
+
+        // We want to have an 'endless scrolling' effect.
+        gridView.setOnScrollListener(new infiniteOnScrollListener(0));
+        gridView.scrollTo(0, 0);
         return gridView;
     }
-
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
@@ -139,7 +143,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 editor.putInt(getString(R.string.pref_sort_by_key), position);
                 editor.apply();
 
-                // TODO: This is super fragile: we depend on the order of the resources arrays being consistent...
+                // TODO: This is fragile: we depend on the order of the resources arrays being consistent...
                 String[] sortByValues = getResources().getStringArray(R.array.sort_by_values);
                 onSortByChanged(sortByValues[position]);
             }
@@ -154,27 +158,37 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         // Trigger data reload.
         new FetchMovieDataTask(sortByTmdb).execute();
         getLoaderManager().restartLoader(MOVIE_LOADER, null, this);
+        //TODO: reset scroll position to the top.
     }
 
 
     @Override
     public android.support.v4.content.Loader<Cursor> onCreateLoader(int id, Bundle args) {
         Uri moviesUri = MovieContract.MovieEntry.buildMoviesUri();
-        String sortBy;
+        String sortBy = null;
         String selection;
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+        Log.d(LOG_TAG, "onCreateLoader");
 
-        String[] sortByValues = getResources().getStringArray(R.array.sort_by_values);
-        if (sortByValues[prefs.getInt(getString(R.string.pref_sort_by_key), 0)]
-                .equals(getString(R.string.sort_order_popularity))) {
-            sortBy = MovieContract.MovieEntry.COLUMN_POPULARITY + " DESC";
+        String sortByPreference = getSortByPreference();
+        if (sortByPreference.equals(getString(R.string.sort_order_popularity))) {
+            // Don't sort here! It would give a different order compared to the (broken) tmdb api order.
+            // ... And cause inconsistent order of movies: poor user experience.
+            // Better have an approximate order by popularity as provided by the tmdb api.
+//            sortBy = MovieContract.MovieEntry.COLUMN_POPULARITY + " DESC";
             selection = MovieContract.MovieEntry.COLUMN_IN_LIST_POPULARITY + " = 1";
         }
         else {
             sortBy = MovieContract.MovieEntry.COLUMN_RATING + " DESC";
             selection = MovieContract.MovieEntry.COLUMN_IN_LIST_RATING + " = 1";
         }
+        if (sortBy == null) {
+            sortBy = MovieContract.MovieEntry.COLUMN_INSERT_ORDER + " ASC";
+        }
+        else {
+            sortBy += ", " + MovieContract.MovieEntry.COLUMN_INSERT_ORDER + " ASC";
+        }
+
         return new CursorLoader(
                 getContext(),
                 moviesUri,
@@ -193,34 +207,26 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
     @Override
     public void onLoaderReset(android.support.v4.content.Loader<Cursor> loader) {
+        Log.d(LOG_TAG, "onLoaderReset");
         mImageListAdapter.swapCursor(null);
     }
 
     public class FetchMovieDataTask extends AsyncTask<Void, Void, Vector<ContentValues>> {
 
         private final String LOG_TAG = this.getClass().getSimpleName();
+        private int page;
         private String baseUri = "https://api.themoviedb.org/3/discover/movie";
 
+        final int TMDB_ITEMS_PER_PAGE = 20;
 
         // Parameters to get images from tmdb.
-        private String size = "w500";
+        private String size = "w185";
         private String baseImageUri;
         private String sortBy;
 
-//        popularity.asc
-//        popularity.desc
-//        release_date.asc
-//        release_date.desc
-//        revenue.asc
-//        revenue.desc
-//        primary_release_date.asc
-//        primary_release_date.desc
-//        original_title.asc
-//        original_title.desc
-//        vote_average.asc
-//        vote_average.desc
-//        vote_count.asc
-//        vote_count.desc
+        public FetchMovieDataTask() {
+            this.sortBy = getSortByPreference();
+        }
 
         public FetchMovieDataTask(String sortBy) {
             this.sortBy = sortBy;
@@ -280,8 +286,16 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 baseImageUri = new FetchMovieConfiguration().getImageBaseUri();
             }
 
+            long itemsInDatabase = mImageListAdapter.getCount();
+            // We use floor instead of ceil in case we somehow did not load a page in its entirety.
+            this.page = (int) (Math.floor((float)itemsInDatabase / TMDB_ITEMS_PER_PAGE) + 1);
+
+            Log.d(LOG_TAG, String.format("Number of items already in database: %d", itemsInDatabase));
+            Log.d(LOG_TAG, String.format("Page number we want to fetch: %d", this.page));
+
             Uri movieUri = Uri.parse(baseUri).buildUpon()
-                    .appendQueryParameter("sort_by", sortBy)
+                    .appendQueryParameter("sort_by", this.sortBy)
+                    .appendQueryParameter("page", String.valueOf(this.page))
                     .appendQueryParameter("api_key", MainActivity.API_KEY)
                     .build();
 
@@ -317,8 +331,23 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
                 // Save to database
                 movies = getMovieDataFromJson(moviesJsonStr);
+
+                // We want to add an insert id so that user get a consistent order new movies are added.
+                // For that we basically want an AUTOINCREMENT field, which sqlite does not provide for non primary key fields.
+                Cursor maxCursor = getContext().getContentResolver().query(
+                        MovieContract.MovieEntry.CONTENT_URI,
+                        new String[]{String.format("MAX(%s) AS max", MovieContract.MovieEntry.COLUMN_INSERT_ORDER)},
+                        null,
+                        null,
+                        null
+                );
+                maxCursor.moveToFirst();
+                long maxInsertId = maxCursor.getLong(0);
+                maxCursor.close();
+
                 for (int i = 0; i < movies.toArray().length; i++) {
                     ContentValues movie = movies.get(i);
+                    movie.put(MovieContract.MovieEntry.COLUMN_INSERT_ORDER, maxInsertId + 1 + i);
                     Uri insertedMovie = getContext().getContentResolver().insert(
                             MovieContract.MovieEntry.CONTENT_URI, movie);
                     Log.v(LOG_TAG, "Inserted movie uri: " + insertedMovie.toString());
@@ -327,12 +356,11 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                     ContentValues inListValue = new ContentValues();
                     if (this.sortBy.equals(getString(R.string.sort_order_popularity))){
                         inListValue.put(MovieContract.MovieEntry.COLUMN_IN_LIST_POPULARITY, 1);
-                        getContext().getContentResolver().update(insertedMovie, inListValue, null, null);
                     }
                     else {
                         inListValue.put(MovieContract.MovieEntry.COLUMN_IN_LIST_RATING, 1);
-                        getContext().getContentResolver().update(insertedMovie, inListValue, null, null);
                     }
+                    getContext().getContentResolver().update(insertedMovie, inListValue, null, null);
                 }
 
             } catch (IOException | JSONException e) {
@@ -349,13 +377,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         @Override
         protected void onPostExecute(Vector<ContentValues> movieValues) {
             super.onPostExecute(movieValues);
-//            if (movieValues != null) {
-//                mImageListAdapter.clear();
-//            }
-//            for (ContentValues movie : movieValues) {
-//                Uri imageUri = Uri.parse(movie.getAsString(MovieContract.MovieEntry.COLUMN_IMAGE_URI));
-//                mImageListAdapter.add(imageUri);
-//            }
         }
 
         public String getImageUriFromPath(String posterHash) {
@@ -367,5 +388,54 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             Log.d(LOG_TAG, String.format("Poster Uri: %s", posterUri.toString()));
             return posterUri.toString();
         }
+    }
+
+    private String getSortByPreference() {
+        String[] sortByValues = getResources().getStringArray(R.array.sort_by_values);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+        return sortByValues[prefs.getInt(getString(R.string.pref_sort_by_key), 0)];
+    }
+
+    private class infiniteOnScrollListener implements AbsListView.OnScrollListener {
+        // Good resource: https://github.com/codepath/android_guides/wiki/Endless-Scrolling-with-AdapterViews
+
+        // If we have less items than the number we want in buffer, we need to fetch more data.
+        private int bufferItemCount = 4;
+        private int previousTotalItemCount = 0;
+        private final String LOG_TAG = AbsListView.OnScrollListener.class.getSimpleName();
+
+        public infiniteOnScrollListener(int previousTotalItemCount) {
+            super();
+            this.previousTotalItemCount = previousTotalItemCount;
+        }
+
+        @Override
+        public void onScrollStateChanged(AbsListView view, int scrollState) {
+        }
+
+
+        // This happens many times a second during a scroll, so be wary of the code you place here.
+        @Override
+        public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+//            Log.v(LOG_TAG, String.format("firstVisibleItem: %d", firstVisibleItem));
+//            Log.v(LOG_TAG, String.format("VisibleItemCount: %d", visibleItemCount));
+//            Log.v(LOG_TAG, String.format("totalItemCount: %d", totalItemCount));
+//            Log.v(LOG_TAG, String.format("previousTotalItemCount: %d", this.previousTotalItemCount));
+//            Log.v(LOG_TAG, String.format("totalItemCount - (firstVisibleItem + visibleItemCount) <= this.bufferItemCount %b", totalItemCount - (firstVisibleItem + visibleItemCount) <= this.bufferItemCount));
+
+            if(this.previousTotalItemCount > totalItemCount) {
+                // That happens when we change the sort order: we need to reset the previous count.
+                this.previousTotalItemCount = 0;
+            }
+
+            // If we don't have more items than last time, we're still loading smt.
+            if (totalItemCount > this.previousTotalItemCount && visibleItemCount != 0 &&
+                    totalItemCount - (firstVisibleItem + visibleItemCount) <= this.bufferItemCount) {
+                this.previousTotalItemCount = totalItemCount;
+                new FetchMovieDataTask().execute();
+            }
+        }
+
+
     }
 }
