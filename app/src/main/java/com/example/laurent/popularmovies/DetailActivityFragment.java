@@ -2,10 +2,9 @@ package com.example.laurent.popularmovies;
 
 import android.content.Intent;
 import android.database.Cursor;
-import android.graphics.Paint;
 import android.net.Uri;
-import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
@@ -19,8 +18,6 @@ import android.widget.TextView;
 
 import com.example.laurent.popularmovies.data.MovieContract;
 import com.facebook.drawee.view.SimpleDraweeView;
-
-import org.w3c.dom.Text;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -108,7 +105,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     }
 
     /**
-     *
+     * Dichotomic search to find a text size that fits.
      * @param view
      * @return A text size that works (in pixels).
      */
@@ -142,7 +139,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
      * @param string
      * @return
      */
-
     private String getYearFromDate(String string) {
         return string.split("-")[0];
     }

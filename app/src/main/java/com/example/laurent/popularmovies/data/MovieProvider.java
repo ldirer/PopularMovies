@@ -38,10 +38,6 @@ public class MovieProvider extends ContentProvider {
 
     static final int MOVIES = 100;
     static final int MOVIE = 101;
-//    static final int WEATHER = 100;
-//    static final int WEATHER_WITH_LOCATION = 101;
-//    static final int WEATHER_WITH_LOCATION_AND_DATE = 102;
-//    static final int LOCATION = 300;
 
     private static final SQLiteQueryBuilder sMovieQueryBuilder;
 
@@ -50,12 +46,6 @@ public class MovieProvider extends ContentProvider {
         sMovieQueryBuilder.setTables(MovieContract.MovieEntry.TABLE_NAME);
     }
 
-    /*
-        Students: Here is where you need to create the UriMatcher. This UriMatcher will
-        match each URI to the WEATHER, WEATHER_WITH_LOCATION, WEATHER_WITH_LOCATION_AND_DATE,
-        and LOCATION integer constants defined above.  You can test this by uncommenting the
-        testUriMatcher test within TestUriMatcher.
-     */
     static UriMatcher buildUriMatcher() {
         // I know what you're thinking.  Why create a UriMatcher when you can use regular
         // expressions instead?  Because you're not crazy, that's why.
@@ -68,8 +58,6 @@ public class MovieProvider extends ContentProvider {
 
         // For each type of URI you want to add, create a corresponding code.
         matcher.addURI(authority, MovieContract.PATH_MOVIES, MOVIES);
-        // TODO: clarify below line.
-        // Here I'd like to map the Uris to MOVIE. However that would cause A LOT of code duplication!! How to go about this?
         matcher.addURI(authority, MovieContract.PATH_MOVIES + "/*", MOVIE);
         return matcher;
     }
@@ -185,29 +173,6 @@ public class MovieProvider extends ContentProvider {
     }
 
 
-//    // TODO: how to expose this method with the ContentProvider only offering insert/bulkInsert methods?
-//    public Uri insertWithOnConflict(Uri uri, ContentValues values, int conflictAlgorithm) {
-////        http://stackoverflow.com/questions/19337029/insert-if-not-exists-statement-in-sqlite/19343100#19343100
-//        final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
-//        final int match = sUriMatcher.match(uri);
-//        Uri returnUri;
-//
-//        switch (match) {
-//            case MOVIES: {
-//                long _id = db.insertWithOnConflict(MovieContract.MovieEntry.TABLE_NAME, null, values, conflictAlgorithm); // SQLiteDatabase.CONFLICT_IGNORE);
-//                if ( _id > 0 )
-//                    returnUri = MovieContract.MovieEntry.buildMovieUri(_id);
-//                else
-//                    throw new android.database.SQLException("Failed to insert row into " + uri);
-//                break;
-//            }
-//            default:
-//                throw new UnsupportedOperationException("Unknown uri: " + uri);
-//        }
-//        getContext().getContentResolver().notifyChange(uri, null);
-//        return returnUri;
-//    }
-
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
         final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
@@ -278,56 +243,6 @@ public class MovieProvider extends ContentProvider {
         return selectionWithId;
     }
 
-    @Override
-    public int bulkInsert(Uri uri, ContentValues[] values) {
-        final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
-        final int match = sUriMatcher.match(uri);
-        switch (match) {
-            case MOVIES:
-                db.beginTransaction();
-                int returnCount = 0;
-                try {
-                    for (ContentValues value : values) {
-                        long _id = db.insert(MovieContract.MovieEntry.TABLE_NAME, null, value);
-                        if (_id != -1) {
-                            returnCount++;
-                        }
-                    }
-                    db.setTransactionSuccessful();
-                } finally {
-                    db.endTransaction();
-                }
-                getContext().getContentResolver().notifyChange(uri, null);
-                return returnCount;
-            default:
-                return super.bulkInsert(uri, values);
-        }
-    }
-
-    public int bulkInsertWithOnConflict(Uri uri, ContentValues[] values, int conflictAlgorithm) {
-        final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
-        final int match = sUriMatcher.match(uri);
-        switch (match) {
-            case MOVIES:
-                db.beginTransaction();
-                int returnCount = 0;
-                try {
-                    for (ContentValues value : values) {
-                        long _id = db.insertWithOnConflict(MovieContract.MovieEntry.TABLE_NAME, null, value, conflictAlgorithm);
-                        if (_id != -1) {
-                            returnCount++;
-                        }
-                    }
-                    db.setTransactionSuccessful();
-                } finally {
-                    db.endTransaction();
-                }
-                getContext().getContentResolver().notifyChange(uri, null);
-                return returnCount;
-            default:
-                return super.bulkInsert(uri, values);
-        }
-    }
 
     // You do not need to call this method. This is a method specifically to assist the testing
     // framework in running smoothly. You can read more at:

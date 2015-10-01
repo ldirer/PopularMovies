@@ -1,16 +1,14 @@
 package com.example.laurent.popularmovies;
 
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
-import android.content.Loader;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
-import android.os.Bundle;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.view.MenuItemCompat;
@@ -24,10 +22,7 @@ import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.CursorAdapter;
 import android.widget.GridView;
-import android.widget.ListView;
-import android.widget.SimpleCursorAdapter;
 import android.widget.Spinner;
 
 import com.example.laurent.popularmovies.data.MovieContract;
@@ -42,7 +37,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Vector;
 
 /**
