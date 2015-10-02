@@ -14,5 +14,7 @@
     <string name="sort_order_label_rating">User rating</string>
     <string name="pref_sort_by_key">sort_by_index</string>
     <string name="title_activity_detail">DetailActivity</string>
+    <string name="favorite_add_to_button_text">Mark as favorite!</string>
+    <string name="favorite_remove_button_text">Remove from favorites</string>
 
 </resources>

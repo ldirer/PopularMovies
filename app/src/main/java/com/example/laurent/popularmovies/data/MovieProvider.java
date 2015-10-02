@@ -23,8 +23,10 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteQueryBuilder;
+import android.database.sqlite.SQLiteStatement;
 import android.graphics.Movie;
 import android.net.Uri;
+import android.os.CancellationSignal;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
@@ -38,6 +40,7 @@ public class MovieProvider extends ContentProvider {
 
     static final int MOVIES = 100;
     static final int MOVIE = 101;
+    static final int TOGGLE_FAVORITE = 102;
 
     private static final SQLiteQueryBuilder sMovieQueryBuilder;
 
@@ -59,6 +62,7 @@ public class MovieProvider extends ContentProvider {
         // For each type of URI you want to add, create a corresponding code.
         matcher.addURI(authority, MovieContract.PATH_MOVIES, MOVIES);
         matcher.addURI(authority, MovieContract.PATH_MOVIES + "/*", MOVIE);
+        matcher.addURI(authority, MovieContract.PATH_MOVIES + "/*/toggle_favorite", TOGGLE_FAVORITE);
         return matcher;
     }
 
@@ -88,6 +92,8 @@ public class MovieProvider extends ContentProvider {
             case MOVIES:
                 return MovieContract.MovieEntry.CONTENT_TYPE;
             case MOVIE:
+                return MovieContract.MovieEntry.CONTENT_ITEM_TYPE;
+            case TOGGLE_FAVORITE:
                 return MovieContract.MovieEntry.CONTENT_ITEM_TYPE;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
@@ -219,6 +225,19 @@ public class MovieProvider extends ContentProvider {
                 rowsUpdated = db.update(MovieContract.MovieEntry.TABLE_NAME, values, selection,
                         selectionArgs);
                 Log.v(LOG_TAG, String.format("Number of rows updated: %d", rowsUpdated));
+                break;
+            case TOGGLE_FAVORITE:
+                Log.d(LOG_TAG, "Toggling favorite status...");
+                selection = getSelectionWithIdFromUri(uri, selection);
+                String toggleQuery = "UPDATE " + MovieContract.MovieEntry.TABLE_NAME +
+                        " SET " + MovieContract.MovieEntry.COLUMN_IS_FAVORITE + " = (" +
+                        MovieContract.MovieEntry.COLUMN_IS_FAVORITE + " + 1) % 2 " +
+                        "WHERE " + selection;
+                Log.d(LOG_TAG, "Toggling favorite query: " + toggleQuery);
+                rowsUpdated = db.rawQuery(toggleQuery, null).getCount();
+                //TODO: How can we do this query (a workaround would be a select followed by an update) AND get the count of updated rows?
+                // TODO: remove this hack.
+                rowsUpdated = 1;
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);

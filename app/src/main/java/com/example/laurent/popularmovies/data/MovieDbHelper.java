@@ -30,7 +30,9 @@ public class MovieDbHelper extends SQLiteOpenHelper {
                 MovieEntry.COLUMN_POPULARITY + " DOUBLE NOT NULL, " +
                 // No boolean field in sqlite, we use an integer representation.
                 MovieEntry.COLUMN_IN_LIST_POPULARITY + " INTEGER, " +
-                MovieEntry.COLUMN_IN_LIST_RATING + " INTEGER " +
+                MovieEntry.COLUMN_IN_LIST_RATING + " INTEGER, " +
+                // A movie is not in favorites by default.
+                MovieEntry.COLUMN_IS_FAVORITE + " INTEGER DEFAULT 0" +
                 ");";
 
         Log.v(LOG_TAG, createMovieTable);

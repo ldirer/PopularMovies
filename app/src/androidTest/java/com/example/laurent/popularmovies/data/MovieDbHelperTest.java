@@ -47,6 +47,7 @@ public class MovieDbHelperTest extends AndroidTestCase {
         locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_IN_LIST_RATING);
         locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_INSERT_ORDER);
         locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_IMAGE_URI);
+        locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_IS_FAVORITE);
         locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_POPULARITY);
         locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_RATING);
         locationColumnHashSet.add(MovieContract.MovieEntry.COLUMN_RELEASE_DATE);

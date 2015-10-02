@@ -111,6 +111,20 @@
                 android:textAppearance="@style/Base.TextAppearance.AppCompat.Subhead"
                 android:text="8.2/10"
                 />
+            
+            <Button
+                android:id="@+id/detail_favorite_button"
+                android:layout_marginLeft="@dimen/activity_horizontal_margin"
+                android:layout_marginRight="@dimen/activity_horizontal_margin"
+                android:layout_width="fill_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:textAlignment="center"
+                android:text="@string/favorite_add_to_button_text"
+                />
 
         </LinearLayout>
     </LinearLayout>
