@@ -24,6 +24,8 @@
         android:id="@+id/main_progressbar"
         android:layout_width="fill_parent"
         android:layout_height="0dp"
-        android:layout_weight="0.1"
+        android:layout_weight="0.05"
+        android:background="@android:color/transparent"
         />
+    <!--android:background="@android:color/darker_gray"-->
 </LinearLayout>

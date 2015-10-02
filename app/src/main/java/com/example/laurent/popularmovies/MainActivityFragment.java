@@ -116,7 +116,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         // We want to have an 'endless scrolling' effect.
         gridView.setOnScrollListener(new infiniteOnScrollListener(0));
         gridView.scrollTo(0, 0);
-        return gridView;
+        return rootView;
     }
 
     @Override
@@ -280,6 +280,8 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
         @Override
         protected Vector<ContentValues> doInBackground(Void... params) {
+            // We tell our progress bar/spinning wheel to show up.
+            publishProgress(0);
 
             if (baseImageUri == null) {
                 baseImageUri = new FetchMovieConfiguration().getImageBaseUri();
@@ -366,7 +368,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                         inListValue.put(MovieContract.MovieEntry.COLUMN_IN_LIST_RATING, 1);
                     }
                     getContext().getContentResolver().update(insertedMovie, inListValue, null, null);
-                    publishProgress(100 * (i + 1) / movies.toArray().length);
                 }
 
             } catch (IOException | JSONException e) {
@@ -376,12 +377,23 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                     urlConnection.disconnect();
                 }
             }
+            // Our progress bar is a spinning wheel, we just need to tell it when we're done.
+            publishProgress(100);
             return movies;
         }
 
         @Override
         protected void onProgressUpdate(Integer... values) {
-            mProgress.setProgress(values[0]);
+            int completion = values[0];
+//            Log.d(LOG_TAG, String.format("Progress: %d%%", completion));
+            if(completion == 100) {
+                mProgress.setVisibility(View.GONE);
+            }
+            else {
+                mProgress.setVisibility(View.VISIBLE);
+                mProgress.setProgress(completion);
+            }
+
         }
 
         @Override
@@ -427,11 +439,11 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         // This happens many times a second during a scroll, so be wary of the code you place here.
         @Override
         public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
-//            Log.v(LOG_TAG, String.format("firstVisibleItem: %d", firstVisibleItem));
-//            Log.v(LOG_TAG, String.format("VisibleItemCount: %d", visibleItemCount));
-//            Log.v(LOG_TAG, String.format("totalItemCount: %d", totalItemCount));
-//            Log.v(LOG_TAG, String.format("previousTotalItemCount: %d", this.previousTotalItemCount));
-//            Log.v(LOG_TAG, String.format("totalItemCount - (firstVisibleItem + visibleItemCount) <= this.bufferItemCount %b", totalItemCount - (firstVisibleItem + visibleItemCount) <= this.bufferItemCount));
+            Log.v(LOG_TAG, String.format("firstVisibleItem: %d", firstVisibleItem));
+            Log.v(LOG_TAG, String.format("VisibleItemCount: %d", visibleItemCount));
+            Log.v(LOG_TAG, String.format("totalItemCount: %d", totalItemCount));
+            Log.v(LOG_TAG, String.format("previousTotalItemCount: %d", this.previousTotalItemCount));
+            Log.v(LOG_TAG, String.format("totalItemCount - (firstVisibleItem + visibleItemCount) <= this.bufferItemCount %b", totalItemCount - (firstVisibleItem + visibleItemCount) <= this.bufferItemCount));
 
             if(this.previousTotalItemCount > totalItemCount) {
                 // That happens when we change the sort order: we need to reset the previous count.
