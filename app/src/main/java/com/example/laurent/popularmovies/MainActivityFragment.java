@@ -328,6 +328,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
                 // We want to add an insert id so that user get a consistent order new movies are added.
                 // For that we basically want an AUTOINCREMENT field, which sqlite does not provide for non primary key fields.
+                long maxInsertId;
                 Cursor maxCursor = getContext().getContentResolver().query(
                         MovieContract.MovieEntry.CONTENT_URI,
                         new String[]{String.format("MAX(%s) AS max", MovieContract.MovieEntry.COLUMN_INSERT_ORDER)},
@@ -335,9 +336,14 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                         null,
                         null
                 );
-                maxCursor.moveToFirst();
-                long maxInsertId = maxCursor.getLong(0);
-                maxCursor.close();
+                if (maxCursor != null) {
+                    maxCursor.moveToFirst();
+                    maxInsertId = maxCursor.getLong(0);
+                    maxCursor.close();
+                }
+                else {
+                    maxInsertId = 0;
+                }
 
                 for (int i = 0; i < movies.toArray().length; i++) {
                     ContentValues movie = movies.get(i);
