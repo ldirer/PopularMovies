@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         API_KEY = this.getString(R.string.api_key_tmdb);
-        Log.e(LOG_TAG, String.format("API KEY IS: %s", API_KEY));
+        Log.d(LOG_TAG, String.format("API KEY IS: %s", API_KEY));
     }
 
 

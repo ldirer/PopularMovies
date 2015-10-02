@@ -23,6 +23,8 @@ import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.GridView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 
 import com.example.laurent.popularmovies.data.MovieContract;
@@ -46,6 +48,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
     private final String LOG_TAG = this.getClass().getSimpleName();
     public ImageListAdapter mImageListAdapter;
+    private ProgressBar mProgress;
 
     private static final int MOVIE_LOADER = 0;
 
@@ -89,7 +92,9 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        GridView gridView = (GridView)inflater.inflate(R.layout.fragment_main, container, false);
+        LinearLayout rootView = (LinearLayout) inflater.inflate(R.layout.fragment_main, container, false);
+        GridView gridView = (GridView)rootView.findViewById(R.id.main_gridview);
+        mProgress = (ProgressBar) rootView.findViewById(R.id.main_progressbar);
 
         mImageListAdapter = new ImageListAdapter(getActivity(), null, 0);
         // The task populates the adapter with image urls.
@@ -205,7 +210,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         mImageListAdapter.swapCursor(null);
     }
 
-    public class FetchMovieDataTask extends AsyncTask<Void, Void, Vector<ContentValues>> {
+    public class FetchMovieDataTask extends AsyncTask<Void, Integer, Vector<ContentValues>> {
 
         private final String LOG_TAG = this.getClass().getSimpleName();
         private int page;
@@ -361,6 +366,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                         inListValue.put(MovieContract.MovieEntry.COLUMN_IN_LIST_RATING, 1);
                     }
                     getContext().getContentResolver().update(insertedMovie, inListValue, null, null);
+                    publishProgress(100 * (i + 1) / movies.toArray().length);
                 }
 
             } catch (IOException | JSONException e) {
@@ -370,8 +376,12 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                     urlConnection.disconnect();
                 }
             }
-
             return movies;
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... values) {
+            mProgress.setProgress(values[0]);
         }
 
         @Override
