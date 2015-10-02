@@ -155,7 +155,9 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
     private void onSortByChanged(String sortByTmdb) {
         // Trigger data reload.
-        new FetchMovieDataTask(sortByTmdb).execute();
+        if (!getSortByPreference().equals(getString(R.string.sort_order_filter_favorites))) {
+            new FetchMovieDataTask(sortByTmdb).execute();
+        }
         getLoaderManager().restartLoader(MOVIE_LOADER, null, this);
         //TODO: reset scroll position to the top.
     }
@@ -170,17 +172,26 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         Log.d(LOG_TAG, "onCreateLoader");
 
         String sortByPreference = getSortByPreference();
-        if (sortByPreference.equals(getString(R.string.sort_order_popularity))) {
+        if (sortByPreference.equals(getString(R.string.sort_order_filter_favorites))) {
+            selection = MovieContract.MovieEntry.COLUMN_IS_FAVORITE + " = 1";
+        }
+        else if (sortByPreference.equals(getString(R.string.sort_order_popularity))) {
             // Don't sort here! It would give a different order compared to the (broken) tmdb api order.
             // ... And cause inconsistent order of movies: poor user experience.
             // Better have an approximate order by popularity as provided by the tmdb api.
 //            sortBy = MovieContract.MovieEntry.COLUMN_POPULARITY + " DESC";
             selection = MovieContract.MovieEntry.COLUMN_IN_LIST_POPULARITY + " = 1";
         }
-        else {
-            sortBy = MovieContract.MovieEntry.COLUMN_RATING + " DESC";
+        else if (sortByPreference.equals(getString(R.string.sort_order_rating))){
+//            sortBy = MovieContract.MovieEntry.COLUMN_RATING + " DESC";
             selection = MovieContract.MovieEntry.COLUMN_IN_LIST_RATING + " = 1";
         }
+        else {
+            Log.e(LOG_TAG, String.format("Unexpected sortByPreference value! Got: %s", sortByPreference));
+            selection = MovieContract.MovieEntry.COLUMN_IN_LIST_POPULARITY + " = 1";
+        }
+
+
         if (sortBy == null) {
             sortBy = MovieContract.MovieEntry.COLUMN_INSERT_ORDER + " ASC";
         }
@@ -321,7 +332,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                     // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
                     // But it does make debugging a *lot* easier if you print out the completed
                     // buffer for debugging.
-                    buffer.append(line + "\n");
+                    buffer.append(line).append("\n");
                 }
 
                 if (buffer.length() == 0) {
@@ -333,7 +344,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 // Save to database
                 movies = getMovieDataFromJson(moviesJsonStr);
 
-                // We want to add an insert id so that user get a consistent order new movies are added.
+                // We want to add an insert id so that user get a consistent order as new movies are added.
                 // For that we basically want an AUTOINCREMENT field, which sqlite does not provide for non primary key fields.
                 long maxInsertId;
                 Cursor maxCursor = getContext().getContentResolver().query(
@@ -361,9 +372,10 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
                     // We update the fields to say in which list(s) the movie should show up.
                     ContentValues inListValue = new ContentValues();
-                    if (this.sortBy.equals(getString(R.string.sort_order_popularity))){
-                        inListValue.put(MovieContract.MovieEntry.COLUMN_IN_LIST_POPULARITY, 1);
-                    }
+                    if (this.sortBy.equals(getString(R.string.sort_order_popularity))) {
+                            inListValue.put(MovieContract.MovieEntry.COLUMN_IN_LIST_POPULARITY, 1);
+                            break;
+                        }
                     else {
                         inListValue.put(MovieContract.MovieEntry.COLUMN_IN_LIST_RATING, 1);
                     }

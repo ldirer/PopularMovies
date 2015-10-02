@@ -21,8 +21,6 @@ import java.util.ArrayList;
  */
 public class ImageListAdapter extends CursorAdapter {
 
-    //TODO: look at which size actually is appropriate.
-    private static final String size = "w500";
     private final String LOG_TAG = this.getClass().getSimpleName();
 
     public ImageListAdapter(Context context, Cursor c, int flags) {
