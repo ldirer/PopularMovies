@@ -5,6 +5,7 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
@@ -17,10 +18,26 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import com.example.laurent.popularmovies.data.MovieContract;
 import com.facebook.drawee.view.SimpleDraweeView;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Vector;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -31,7 +48,8 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     // We need a unique id for each loader.
     public int DETAIL_LOADER = 0;
     public Uri movieUri;
-
+    private ReviewListAdapter mReviewListAdapter;
+    private ArrayList<Review> mReviewList;
     private final static String[] DETAIL_COLUMNS = {
             MovieContract.MovieEntry.COLUMN_IMAGE_URI,
             MovieContract.MovieEntry.COLUMN_IS_FAVORITE,
@@ -75,6 +93,16 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             }
         });
         view.setTag(new ViewHolder(view));
+
+        Review r = new Review("Laurent", "This movie is freakin' awesome");
+//        mReviewList = new ArrayList<>();
+        mReviewList = new ArrayList<>(Arrays.asList(r));
+        // Fetching task populates the review list.
+        new FetchReviewsDataTask().execute();
+        mReviewListAdapter = new ReviewListAdapter(getContext(), mReviewList);
+        ListView reviewListView = (ListView)view.findViewById(R.id.detail_reviews);
+        reviewListView.setAdapter(mReviewListAdapter);
+
         return view;
     }
 
@@ -111,10 +139,9 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 //            viewHolder.insert_order_view.setText(String.format("Insert order: %d", data.getInt(COL_MOVIE_INSERT_ORDER)));
 
             Log.d(LOG_TAG, String.format("movie is favorite value: %d", data.getInt(COL_MOVIE_IS_FAVORITE)));
-            if(data.getInt(COL_MOVIE_IS_FAVORITE) == 0) {
+            if (data.getInt(COL_MOVIE_IS_FAVORITE) == 0) {
                 viewHolder.favorite_button.setText(R.string.favorite_add_to_button_text);
-            }
-            else {
+            } else {
                 viewHolder.favorite_button.setText(R.string.favorite_remove_button_text);
             }
 
@@ -128,6 +155,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 
     /**
      * Dichotomic search to find a text size that fits.
+     *
      * @param view
      * @return A text size that works (in pixels).
      */
@@ -145,10 +173,10 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         TextPaint testPaint = new TextPaint();
         testPaint.set(view.getPaint());
 
-        while((hi - lo) > threshold) {
+        while ((hi - lo) > threshold) {
             float size = (hi + lo) / 2;
             testPaint.setTextSize(size);
-            if(testPaint.measureText(text) >= targetWidth)
+            if (testPaint.measureText(text) >= targetWidth)
                 hi = size; // too big
             else
                 lo = size; // too small
@@ -160,6 +188,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 
     /**
      * The dates we get from the movie database are formatted as yyyy-mm-dd.
+     *
      * @param string
      * @return
      */
@@ -180,19 +209,22 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         TextView synopsis_view;
         SimpleDraweeView poster_view;
         Button favorite_button;
+        ListView reviews_view;
 
 //        TextView popularity_view;
 //        TextView insert_order_view;
 
         public ViewHolder(View view) {
-            this.rating_view = ((TextView) view.findViewById(R.id.detail_rating));
-            this.title_view = ((TextView) view.findViewById(R.id.detail_title));
+            this.rating_view = (TextView) view.findViewById(R.id.detail_rating);
+            this.title_view = (TextView) view.findViewById(R.id.detail_title);
             this.release_date_view = ((TextView) view.findViewById(R.id.detail_release_date));
             this.synopsis_view = ((TextView) view.findViewById(R.id.detail_synopsis));
             this.poster_view = (SimpleDraweeView) view.findViewById(R.id.detail_poster);
             this.favorite_button = (Button) view.findViewById(R.id.detail_favorite_button);
 //            this.popularity_view = ((TextView) view.findViewById(R.id.detail_popularity));
 //            this.insert_order_view = ((TextView) view.findViewById(R.id.detail_insert_order));
+
+            this.reviews_view = (ListView)view.findViewById(R.id.detail_reviews);
         }
     }
 
@@ -200,6 +232,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     /**
      * We don't need to modify the view here: it's done by the loader when it notices data has
      * changed.
+     *
      * @param view
      */
     public void markMovieAsFavorite(View view) {
@@ -214,4 +247,107 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         int rowsUpdated = getContext().getContentResolver().update(toggleFavoriteUri, null, null, null);
         Log.d(LOG_TAG, String.format("rows updated: %d", rowsUpdated));
     }
+
+
+    public class FetchReviewsDataTask extends AsyncTask<Void, Void, List<Review>> {
+        private String baseUri;
+
+        public FetchReviewsDataTask() {
+            super();
+            Intent intent = getActivity().getIntent();
+            long _id = Long.parseLong(intent.getData().getLastPathSegment());
+            this.baseUri = String.format("https://api.themoviedb.org/3/movie/%d/reviews", _id);
+        }
+
+
+        @Override
+        protected List<Review> doInBackground(Void... params) {
+
+//            publishProgress(0);
+
+            Uri movieUri = Uri.parse(baseUri).buildUpon()
+                    .appendQueryParameter("api_key", MainActivity.API_KEY)
+                    .build();
+
+            Log.d(LOG_TAG, movieUri.toString());
+
+            List<Review> reviews = null;
+            String reviewsJsonStr = null;
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            try {
+                URL url = new URL(movieUri.toString());
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+
+                InputStream inputStream = urlConnection.getInputStream();
+                StringBuffer buffer = new StringBuffer();
+
+                reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
+                    // But it does make debugging a *lot* easier if you print out the completed
+                    // buffer for debugging.
+                    buffer.append(line).append("\n");
+                }
+
+                if (buffer.length() == 0) {
+                    // Stream was empty.  No point in parsing.
+                    return null;
+                }
+                reviewsJsonStr = buffer.toString();
+                reviews = getReviewDataFromJson(reviewsJsonStr);
+
+            } catch (IOException | JSONException e) {
+                e.printStackTrace();
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+            }
+            // Our progress bar is a spinning wheel, we just need to tell it when we're done.
+//            publishProgress(100);
+            return reviews;
+        }
+
+        @Override
+        protected void onPostExecute(List<Review> result) {
+            super.onPostExecute(result);
+            if (result != null) {
+                mReviewListAdapter.addAll(result);
+            }
+            // TODO: do we need to notify someone??
+        }
+
+        private List<Review> getReviewDataFromJson(String reviewsJsonStr) throws JSONException {
+            final String TMDB_REVIEWS_LIST = "results";
+            final String TMDB_REVIEW_AUTHOR = "author";
+            final String TMDB_REVIEW_BODY = "content";
+
+            JSONObject reviewsJson = new JSONObject(reviewsJsonStr);
+            JSONArray reviewsArray = reviewsJson.getJSONArray(TMDB_REVIEWS_LIST);
+
+
+            Review r = new Review("Laurent", "This movie is freakin' awesome");
+            List<Review> reviewList = new ArrayList<>(Arrays.asList(r));
+
+            for (int i = 0; i < reviewsArray.length(); i++) {
+                // TODO: is this efficient? Fetching the ith element each time does not seem so.
+                // TODO: No map method on JSONArray?..
+                JSONObject reviewJson = reviewsArray.getJSONObject(i);
+                String author = reviewJson.getString(TMDB_REVIEW_AUTHOR);
+                String body = reviewJson.getString(TMDB_REVIEW_BODY);
+
+                Review review = new Review();
+                review.author = author;
+                review.body = body;
+                reviewList.add(review);
+            }
+            return reviewList;
+        }
+
+    }
+
 }

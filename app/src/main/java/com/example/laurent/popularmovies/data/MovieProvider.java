@@ -251,6 +251,7 @@ public class MovieProvider extends ContentProvider {
 
 
     private String getSelectionWithIdFromUri(Uri uri, String selection) {
+        Log.d(LOG_TAG, "in getSelectionWithIdFromUri");
         long _id = MovieContract.MovieEntry.getIdFromUri(uri);
         String selectionWithId = String.format("%s.%s = %d",
                 MovieContract.MovieEntry.TABLE_NAME,
