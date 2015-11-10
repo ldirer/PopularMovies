@@ -17,6 +17,7 @@ import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -33,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,7 +51,9 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     public int DETAIL_LOADER = 0;
     public Uri movieUri;
     private ReviewListAdapter mReviewListAdapter;
+    private TrailerListAdapter mTrailerListAdapter;
     private ArrayList<Review> mReviewList;
+    private ArrayList<Trailer> mTrailerList;
     private final static String[] DETAIL_COLUMNS = {
             MovieContract.MovieEntry.COLUMN_IMAGE_URI,
             MovieContract.MovieEntry.COLUMN_IS_FAVORITE,
@@ -95,13 +99,31 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         view.setTag(new ViewHolder(view));
 
         Review r = new Review("Laurent", "This movie is freakin' awesome");
+        Trailer t = Utility.getDummyTrailer();
+
 //        mReviewList = new ArrayList<>();
+//        mTrailerList = new ArrayList<>();
+        mTrailerList = new ArrayList<>(Arrays.asList(t));
         mReviewList = new ArrayList<>(Arrays.asList(r));
         // Fetching task populates the review list.
         new FetchReviewsDataTask().execute();
+        new FetchTrailersDataTask().execute();
         mReviewListAdapter = new ReviewListAdapter(getContext(), mReviewList);
         ListView reviewListView = (ListView)view.findViewById(R.id.detail_reviews);
         reviewListView.setAdapter(mReviewListAdapter);
+
+        mTrailerListAdapter = new TrailerListAdapter(getContext(), mTrailerList);
+        ListView trailerListView = (ListView)view.findViewById(R.id.detail_trailers);
+        trailerListView.setAdapter(mTrailerListAdapter);
+        // Toggle opening of video in app or browser.
+        trailerListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                final Uri youtubeUri = ((Trailer)parent.getItemAtPosition(position)).uri;
+                Intent videoIntent = new Intent(Intent.ACTION_VIEW, youtubeUri);
+                startActivity(videoIntent);
+            }
+        });
 
         return view;
     }
@@ -248,9 +270,103 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         Log.d(LOG_TAG, String.format("rows updated: %d", rowsUpdated));
     }
 
+    public class FetchTrailersDataTask extends AsyncTask<Void, Void, List<Trailer>>{
+
+        private String baseUri;
+        private String LOG_TAG = FetchTrailersDataTask.class.getSimpleName();
+
+        public FetchTrailersDataTask() {
+            super();
+            Intent intent = getActivity().getIntent();
+            long _id = Long.parseLong(intent.getData().getLastPathSegment());
+            this.baseUri = String.format("https://api.themoviedb.org/3/movie/%d/videos", _id);
+        }
+
+        @Override
+        protected List<Trailer> doInBackground(Void... params) {
+            Uri trailersUri = Uri.parse(baseUri).buildUpon()
+                    .appendQueryParameter("api_key", MainActivity.API_KEY)
+                    .build();
+
+            Log.d(LOG_TAG, trailersUri.toString());
+            List<Trailer> trailers = null;
+            String trailersJsonStr = null;
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            try {
+                URL url = new URL(trailersUri.toString());
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+
+                InputStream inputStream = urlConnection.getInputStream();
+                StringBuffer buffer = new StringBuffer();
+
+                reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
+                    // But it does make debugging a *lot* easier if you print out the completed
+                    // buffer for debugging.
+                    buffer.append(line).append("\n");
+                }
+
+                if (buffer.length() == 0) {
+                    // Stream was empty.  No point in parsing.
+                    return null;
+                }
+                trailersJsonStr = buffer.toString();
+                trailers = getTrailerDataFromJson(trailersJsonStr);
+
+            } catch (IOException | JSONException e) {
+                Log.e(LOG_TAG, "Error on my side.");
+                e.printStackTrace();
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+            }
+            return trailers;
+        }
+
+        private List<Trailer> getTrailerDataFromJson(String trailersJsonStr) throws JSONException {
+            final String TMDB_TRAILERS_LIST = "results";
+            final String TMDB_TRAILER_NAME = "name";
+            final String TMDB_TRAILER_KEY = "key";
+
+            JSONObject trailersJson = new JSONObject(trailersJsonStr);
+            JSONArray trailersArray = trailersJson.getJSONArray(TMDB_TRAILERS_LIST);
+
+
+            Trailer t = Utility.getDummyTrailer();
+            List<Trailer> trailerList = new ArrayList<>(Arrays.asList(t));
+
+            for (int i = 0; i < trailersArray.length(); i++) {
+                JSONObject trailerJson = trailersArray.getJSONObject(i);
+                String name = trailerJson.getString(TMDB_TRAILER_NAME);
+                String key = trailerJson.getString(TMDB_TRAILER_KEY);
+
+                Trailer trailer = new Trailer(name, key);
+                trailerList.add(trailer);
+            }
+            return trailerList;
+        }
+
+
+        @Override
+        protected void onPostExecute(List<Trailer> result) {
+            super.onPostExecute(result);
+            if (result != null) {
+                Log.d(LOG_TAG, String.format("Number of trailers fetched: %s",
+                        Integer.toString(result.size())));
+                mTrailerListAdapter.addAll(result);
+            }
+        }
+    }
 
     public class FetchReviewsDataTask extends AsyncTask<Void, Void, List<Review>> {
         private String baseUri;
+        private String LOG_TAG = FetchReviewsDataTask.class.getSimpleName();
 
         public FetchReviewsDataTask() {
             super();
@@ -265,18 +381,18 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 
 //            publishProgress(0);
 
-            Uri movieUri = Uri.parse(baseUri).buildUpon()
+            Uri reviewsUri = Uri.parse(baseUri).buildUpon()
                     .appendQueryParameter("api_key", MainActivity.API_KEY)
                     .build();
 
-            Log.d(LOG_TAG, movieUri.toString());
+            Log.d(LOG_TAG, reviewsUri.toString());
 
             List<Review> reviews = null;
             String reviewsJsonStr = null;
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
             try {
-                URL url = new URL(movieUri.toString());
+                URL url = new URL(reviewsUri.toString());
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("GET");
 
@@ -349,5 +465,5 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         }
 
     }
-
 }
+
