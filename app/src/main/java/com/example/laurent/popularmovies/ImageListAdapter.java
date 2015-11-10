@@ -18,6 +18,7 @@ import java.util.ArrayList;
 /**
  * Using Fresco we just need to set a URI for a SimpleDraweeView to have the image downloaded,
  * cached...
+ * We still need a cursorAdapter if/since we're fetching image urls from a database.
  */
 public class ImageListAdapter extends CursorAdapter {
 
