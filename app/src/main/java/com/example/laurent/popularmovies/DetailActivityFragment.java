@@ -1,7 +1,5 @@
 package com.example.laurent.popularmovies;
 
-import android.content.ContentResolver;
-import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -15,6 +13,9 @@ import android.text.TextPaint;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -34,12 +35,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Vector;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -54,6 +53,9 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     private TrailerListAdapter mTrailerListAdapter;
     private ArrayList<Review> mReviewList;
     private ArrayList<Trailer> mTrailerList;
+
+    private MenuItem mShareMenuItem;
+
     private final static String[] DETAIL_COLUMNS = {
             MovieContract.MovieEntry.COLUMN_IMAGE_URI,
             MovieContract.MovieEntry.COLUMN_IS_FAVORITE,
@@ -81,8 +83,14 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
-        getLoaderManager().initLoader(DETAIL_LOADER, null, this);
         super.onActivityCreated(savedInstanceState);
+        getLoaderManager().initLoader(DETAIL_LOADER, null, this);
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        this.setHasOptionsMenu(true);
     }
 
     @Override
@@ -128,6 +136,20 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         return view;
     }
 
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        mShareMenuItem = menu.findItem(R.id.action_share);
+        Uri uri = Utility.getDummyTrailer().uri;
+        Intent shareIntent = getShareIntent(uri);
+        mShareMenuItem.setIntent(shareIntent);
+    }
+
+    public Intent getShareIntent(Uri uri) {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, uri.toString());
+        return shareIntent;
+    }
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
@@ -360,6 +382,8 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
                 Log.d(LOG_TAG, String.format("Number of trailers fetched: %s",
                         Integer.toString(result.size())));
                 mTrailerListAdapter.addAll(result);
+                Intent shareIntent = getShareIntent(result.get(0).uri);
+                mShareMenuItem.setIntent(shareIntent);
             }
         }
     }
