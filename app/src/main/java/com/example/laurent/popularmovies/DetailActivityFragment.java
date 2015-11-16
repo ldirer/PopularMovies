@@ -1,5 +1,6 @@
 package com.example.laurent.popularmovies;
 
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -20,6 +21,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 
@@ -49,10 +51,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     // We need a unique id for each loader.
     public int DETAIL_LOADER = 0;
     public Uri movieUri;
-    private ReviewListAdapter mReviewListAdapter;
-    private TrailerListAdapter mTrailerListAdapter;
-    private ArrayList<Review> mReviewList;
-    private ArrayList<Trailer> mTrailerList;
 
     private MenuItem mShareMenuItem;
 
@@ -106,34 +104,43 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         });
         view.setTag(new ViewHolder(view));
 
-        Review r = new Review("Laurent", "This movie is freakin' awesome");
-        Trailer t = Utility.getDummyTrailer();
 
-//        mReviewList = new ArrayList<>();
-//        mTrailerList = new ArrayList<>();
-        mTrailerList = new ArrayList<>(Arrays.asList(t));
-        mReviewList = new ArrayList<>(Arrays.asList(r));
-        // Fetching task populates the review list.
+
+        // Fetching task populates the linear layouts.
         new FetchReviewsDataTask().execute();
         new FetchTrailersDataTask().execute();
-        mReviewListAdapter = new ReviewListAdapter(getContext(), mReviewList);
-        ListView reviewListView = (ListView)view.findViewById(R.id.detail_reviews);
-        reviewListView.setAdapter(mReviewListAdapter);
 
-        mTrailerListAdapter = new TrailerListAdapter(getContext(), mTrailerList);
-        ListView trailerListView = (ListView)view.findViewById(R.id.detail_trailers);
-        trailerListView.setAdapter(mTrailerListAdapter);
-        // Toggle opening of video in app or browser.
-        trailerListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        return view;
+    }
+
+    public Void addReviewToLinearLayout(LinearLayout parent, Review review) {
+        Log.d(LOG_TAG, "in addReviewToLinearLayout");
+        LayoutInflater li = (LayoutInflater) getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View reviewView = li.inflate(R.layout.detail_review_item, parent, false);
+        TextView authorView = (TextView) reviewView.findViewById(R.id.detail_review_author);
+        TextView bodyView = (TextView) reviewView.findViewById(R.id.detail_review_body);
+        authorView.setText(review.author);
+        bodyView.setText(review.body);
+        parent.addView(reviewView);
+        return null;
+    }
+
+    public Void addTrailerToLinearLayout(LinearLayout parent, final Trailer trailer) {
+        Log.d(LOG_TAG, "in addTrailerToLinearLayout");
+        LayoutInflater li = (LayoutInflater) getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View trailerView = li.inflate(R.layout.detail_trailer_item, parent, false);
+        TextView nameView = (TextView) trailerView.findViewById(R.id.detail_trailer_name);
+        nameView.setText(trailer.name);
+        trailerView.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                final Uri youtubeUri = ((Trailer)parent.getItemAtPosition(position)).uri;
+            public void onClick(View v) {
+                final Uri youtubeUri = trailer.uri;
                 Intent videoIntent = new Intent(Intent.ACTION_VIEW, youtubeUri);
                 startActivity(videoIntent);
             }
         });
-
-        return view;
+        parent.addView(trailerView);
+        return null;
     }
 
     @Override
@@ -253,10 +260,9 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         TextView synopsis_view;
         SimpleDraweeView poster_view;
         Button favorite_button;
-        ListView reviews_view;
+        LinearLayout review_linear_layout;
+        LinearLayout trailer_linear_layout;
 
-//        TextView popularity_view;
-//        TextView insert_order_view;
 
         public ViewHolder(View view) {
             this.rating_view = (TextView) view.findViewById(R.id.detail_rating);
@@ -265,10 +271,8 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             this.synopsis_view = ((TextView) view.findViewById(R.id.detail_synopsis));
             this.poster_view = (SimpleDraweeView) view.findViewById(R.id.detail_poster);
             this.favorite_button = (Button) view.findViewById(R.id.detail_favorite_button);
-//            this.popularity_view = ((TextView) view.findViewById(R.id.detail_popularity));
-//            this.insert_order_view = ((TextView) view.findViewById(R.id.detail_insert_order));
-
-            this.reviews_view = (ListView)view.findViewById(R.id.detail_reviews);
+            this.review_linear_layout = (LinearLayout)view.findViewById(R.id.detail_reviews);
+            this.trailer_linear_layout = (LinearLayout)view.findViewById(R.id.detail_trailers);
         }
     }
 
@@ -381,7 +385,9 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             if (result != null) {
                 Log.d(LOG_TAG, String.format("Number of trailers fetched: %s",
                         Integer.toString(result.size())));
-                mTrailerListAdapter.addAll(result);
+                for (Trailer trailer:result) {
+                    addTrailerToLinearLayout(((ViewHolder)getView().getTag()).trailer_linear_layout, trailer);
+                }
                 Intent shareIntent = getShareIntent(result.get(0).uri);
                 mShareMenuItem.setIntent(shareIntent);
             }
@@ -456,9 +462,10 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         protected void onPostExecute(List<Review> result) {
             super.onPostExecute(result);
             if (result != null) {
-                mReviewListAdapter.addAll(result);
+                for (Review review:result) {
+                    addReviewToLinearLayout(((ViewHolder)getView().getTag()).review_linear_layout, review);
+                }
             }
-            // TODO: do we need to notify someone??
         }
 
         private List<Review> getReviewDataFromJson(String reviewsJsonStr) throws JSONException {
@@ -487,7 +494,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             }
             return reviewList;
         }
-
     }
 }
 

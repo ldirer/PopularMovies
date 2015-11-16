@@ -18,6 +18,9 @@
     <string name="title_activity_detail">DetailActivity</string>
     <string name="favorite_add_to_button_text">Mark as favorite!</string>
     <string name="favorite_remove_button_text">Remove from my favorites</string>
+    <string name="dummy_long">bougaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</string>
+    <string name="reviews_header">Reviews for this movie</string>
+    <string name="trailers_header">Watch these trailers on YouTube</string>
 
 
 </resources>
