@@ -10,7 +10,9 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.text.Html;
 import android.text.TextPaint;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -23,6 +25,7 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RatingBar;
 import android.widget.TextView;
 
 import com.example.laurent.popularmovies.data.MovieContract;
@@ -31,6 +34,7 @@ import com.facebook.drawee.view.SimpleDraweeView;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.w3c.dom.Text;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -51,6 +55,8 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     // We need a unique id for each loader.
     public int DETAIL_LOADER = 0;
     public Uri movieUri;
+    // the title is used to give a link to search for trailers on youtube if no trailer.
+    private String mTitle;
 
     private MenuItem mShareMenuItem;
 
@@ -61,6 +67,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             MovieContract.MovieEntry.COLUMN_RELEASE_DATE,
             MovieContract.MovieEntry.COLUMN_SYNOPSIS,
             MovieContract.MovieEntry.COLUMN_TITLE,
+            MovieContract.MovieEntry.COLUMN_IMAGE_BACKDROP_URI,
 //            MovieContract.MovieEntry.COLUMN_POPULARITY,
 //            MovieContract.MovieEntry.COLUMN_INSERT_ORDER,
     };
@@ -72,6 +79,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     private static final int COL_MOVIE_RELEASE_DATE = 3;
     private static final int COL_MOVIE_SYNOPSIS = 4;
     private static final int COL_MOVIE_TITLE = 5;
+    private static final int COL_MOVIE_IMAGE_BACKDROP_URI = 6;
 //    private static final int COL_MOVIE_POPULARITY = 5;
 //    private static final int COL_MOVIE_INSERT_ORDER = 6;
 
@@ -145,10 +153,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        mShareMenuItem = menu.findItem(R.id.action_share);
-        Uri uri = Utility.getDummyTrailer().uri;
-        Intent shareIntent = getShareIntent(uri);
-        mShareMenuItem.setIntent(shareIntent);
+//        mShareMenuItem = menu.findItem(R.id.action_share);
     }
 
     public Intent getShareIntent(Uri uri) {
@@ -182,12 +187,12 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             ViewHolder viewHolder = (ViewHolder) view.getTag();
 
             viewHolder.rating_view.setText(String.format("%.2f/10", data.getDouble(COL_MOVIE_RATING)));
+            viewHolder.rating_bar_view.setRating((float) data.getDouble(COL_MOVIE_RATING));
+            mTitle = data.getString(COL_MOVIE_TITLE);
             viewHolder.title_view.setText(data.getString(COL_MOVIE_TITLE));
-            viewHolder.release_date_view.setText(getYearFromDate(data.getString(COL_MOVIE_RELEASE_DATE)));
+//            viewHolder.release_date_view.setText(getYearFromDate(data.getString(COL_MOVIE_RELEASE_DATE)));
             viewHolder.synopsis_view.setText(data.getString(COL_MOVIE_SYNOPSIS));
-            viewHolder.poster_view.setImageURI(Uri.parse(data.getString(COL_MOVIE_IMAGE_URI)));
-//            viewHolder.popularity_view.setText(String.format("Popularity score: %.2f", data.getDouble(COL_MOVIE_POPULARITY)));
-//            viewHolder.insert_order_view.setText(String.format("Insert order: %d", data.getInt(COL_MOVIE_INSERT_ORDER)));
+            viewHolder.poster_view.setImageURI(Uri.parse(data.getString(COL_MOVIE_IMAGE_BACKDROP_URI)));
 
             Log.d(LOG_TAG, String.format("movie is favorite value: %d", data.getInt(COL_MOVIE_IS_FAVORITE)));
             if (data.getInt(COL_MOVIE_IS_FAVORITE) == 0) {
@@ -255,6 +260,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     private class ViewHolder {
 
         TextView rating_view;
+        RatingBar rating_bar_view;
         TextView title_view;
         TextView release_date_view;
         TextView synopsis_view;
@@ -262,17 +268,21 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         Button favorite_button;
         LinearLayout review_linear_layout;
         LinearLayout trailer_linear_layout;
-
+        TextView review_linear_layout_empty;
+        TextView trailer_linear_layout_empty;
 
         public ViewHolder(View view) {
             this.rating_view = (TextView) view.findViewById(R.id.detail_rating);
+            this.rating_bar_view = (RatingBar) view.findViewById(R.id.detail_rating_bar);
             this.title_view = (TextView) view.findViewById(R.id.detail_title);
-            this.release_date_view = ((TextView) view.findViewById(R.id.detail_release_date));
+//            this.release_date_view = ((TextView) view.findViewById(R.id.detail_release_date));
             this.synopsis_view = ((TextView) view.findViewById(R.id.detail_synopsis));
             this.poster_view = (SimpleDraweeView) view.findViewById(R.id.detail_poster);
             this.favorite_button = (Button) view.findViewById(R.id.detail_favorite_button);
             this.review_linear_layout = (LinearLayout)view.findViewById(R.id.detail_reviews);
+            this.review_linear_layout_empty = (TextView)view.findViewById(R.id.detail_reviews_empty);
             this.trailer_linear_layout = (LinearLayout)view.findViewById(R.id.detail_trailers);
+            this.trailer_linear_layout_empty = (TextView)view.findViewById(R.id.detail_trailers_empty);
         }
     }
 
@@ -364,8 +374,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             JSONArray trailersArray = trailersJson.getJSONArray(TMDB_TRAILERS_LIST);
 
 
-            Trailer t = Utility.getDummyTrailer();
-            List<Trailer> trailerList = new ArrayList<>(Arrays.asList(t));
+            List<Trailer> trailerList = new ArrayList<>();
 
             for (int i = 0; i < trailersArray.length(); i++) {
                 JSONObject trailerJson = trailersArray.getJSONObject(i);
@@ -385,13 +394,26 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             if (result != null) {
                 Log.d(LOG_TAG, String.format("Number of trailers fetched: %s",
                         Integer.toString(result.size())));
-                for (Trailer trailer:result) {
-                    addTrailerToLinearLayout(((ViewHolder)getView().getTag()).trailer_linear_layout, trailer);
+
+                if (result.size() == 0) {
+                    ViewHolder viewHolder = ((ViewHolder)getView().getTag());
+                    viewHolder.trailer_linear_layout.setVisibility(View.GONE);
+                    viewHolder.trailer_linear_layout_empty.setVisibility(View.VISIBLE);
+                    // Here we're not sure that mTitle is not null... But we can hope for the best!
+                    viewHolder.trailer_linear_layout_empty.setText(String.format(String.valueOf(getText(R.string.trailer_list_empty)), mTitle));
+                    viewHolder.trailer_linear_layout_empty.setText(Html.fromHtml(getString(R.string.trailer_list_empty, mTitle)));
+                    viewHolder.trailer_linear_layout_empty.setMovementMethod(LinkMovementMethod.getInstance());
+                    Log.d(LOG_TAG, "Html text in empty trailer view: " + getString(R.string.trailer_list_empty, mTitle)); //viewHolder.trailer_linear_layout_empty.getText());
                 }
-                Intent shareIntent = getShareIntent(result.get(0).uri);
-                mShareMenuItem.setIntent(shareIntent);
+                else {
+                    for (Trailer trailer:result) {
+                        addTrailerToLinearLayout(((ViewHolder)getView().getTag()).trailer_linear_layout, trailer);
+                    }
+                    Intent shareIntent = getShareIntent(result.get(0).uri);
+//                    mShareMenuItem.setIntent(shareIntent);
+                }
             }
-        }
+            }
     }
 
     public class FetchReviewsDataTask extends AsyncTask<Void, Void, List<Review>> {
@@ -462,8 +484,13 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         protected void onPostExecute(List<Review> result) {
             super.onPostExecute(result);
             if (result != null) {
+                Log.d(LOG_TAG, String.format("Number of reviews fetched: %s", result.size()));
                 for (Review review:result) {
                     addReviewToLinearLayout(((ViewHolder)getView().getTag()).review_linear_layout, review);
+                }
+                if (result.size() == 0) {
+                    ((ViewHolder)getView().getTag()).review_linear_layout.setVisibility(View.GONE);
+                    ((ViewHolder)getView().getTag()).review_linear_layout_empty.setVisibility(View.VISIBLE);
                 }
             }
         }
@@ -476,9 +503,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             JSONObject reviewsJson = new JSONObject(reviewsJsonStr);
             JSONArray reviewsArray = reviewsJson.getJSONArray(TMDB_REVIEWS_LIST);
 
-
-            Review r = new Review("Laurent", "This movie is freakin' awesome");
-            List<Review> reviewList = new ArrayList<>(Arrays.asList(r));
+            List<Review> reviewList = new ArrayList<>();
 
             for (int i = 0; i < reviewsArray.length(); i++) {
                 // TODO: is this efficient? Fetching the ith element each time does not seem so.

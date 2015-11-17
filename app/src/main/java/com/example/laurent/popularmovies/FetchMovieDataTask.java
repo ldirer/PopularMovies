@@ -31,7 +31,8 @@ public class FetchMovieDataTask extends AsyncTask<Void, Integer, Vector<ContentV
     final int TMDB_ITEMS_PER_PAGE = 20;
 
     // Parameters to get images from tmdb.
-    private String size = "w185";
+    private String size = "w780";
+    private String backdropSize = "w780";
     private String baseImageUri;
     private String sortBy;
 
@@ -57,6 +58,7 @@ public class FetchMovieDataTask extends AsyncTask<Void, Integer, Vector<ContentV
         final String TMDB_MOVIES_LIST = "results";
         final String TMDB_TITLE = "original_title";
         final String TMDB_POSTER_PATH = "poster_path";
+        final String TMDB_BACKDROP_PATH = "backdrop_path";
         final String TMDB_SYNOPSIS = "overview";
         final String TMDB_RATING = "vote_average";
         final String TMDB_RELEASE_DATE = "release_date";
@@ -73,6 +75,9 @@ public class FetchMovieDataTask extends AsyncTask<Void, Integer, Vector<ContentV
             int movieId = movie.getInt(TMDB_ID);
             String title = movie.getString(TMDB_TITLE);
             String imagePath = movie.getString(TMDB_POSTER_PATH);
+            String imageBackdropPath = movie.getString(TMDB_BACKDROP_PATH);
+            Log.d(LOG_TAG, "Image poster path: " + imagePath);
+            Log.d(LOG_TAG, "Image backdrop path: " + imageBackdropPath);
             String synopsis = movie.getString(TMDB_SYNOPSIS);
             String rating = movie.getString(TMDB_RATING);
             String releaseDate = movie.getString(TMDB_RELEASE_DATE);
@@ -81,7 +86,8 @@ public class FetchMovieDataTask extends AsyncTask<Void, Integer, Vector<ContentV
             ContentValues movieValues = new ContentValues();
             movieValues.put(MovieContract.MovieEntry.COLUMN_ID, movieId);
             movieValues.put(MovieContract.MovieEntry.COLUMN_TITLE, title);
-            movieValues.put(MovieContract.MovieEntry.COLUMN_IMAGE_URI, getImageUriFromPath(imagePath));
+            movieValues.put(MovieContract.MovieEntry.COLUMN_IMAGE_URI, getImageUriFromPath(imagePath, size));
+            movieValues.put(MovieContract.MovieEntry.COLUMN_IMAGE_BACKDROP_URI, getImageUriFromPath(imageBackdropPath, backdropSize));
             movieValues.put(MovieContract.MovieEntry.COLUMN_SYNOPSIS, synopsis);
             movieValues.put(MovieContract.MovieEntry.COLUMN_RATING, rating);
             movieValues.put(MovieContract.MovieEntry.COLUMN_RELEASE_DATE, releaseDate);
@@ -212,13 +218,13 @@ public class FetchMovieDataTask extends AsyncTask<Void, Integer, Vector<ContentV
         super.onPostExecute(movieValues);
     }
 
-    public String getImageUriFromPath(String posterHash) {
+    public String getImageUriFromPath(String posterHash, String imageSize) {
         posterHash = posterHash.replaceAll("^/", "");
         Uri posterUri = Uri.parse(baseImageUri).buildUpon()
-                .appendPath(size)
+                .appendPath(imageSize)
                 .appendEncodedPath(posterHash)
                 .build();
-        Log.d(LOG_TAG, String.format("Poster Uri: %s", posterUri.toString()));
+        Log.d(LOG_TAG, String.format("Image Uri: %s", posterUri.toString()));
         return posterUri.toString();
     }
 }

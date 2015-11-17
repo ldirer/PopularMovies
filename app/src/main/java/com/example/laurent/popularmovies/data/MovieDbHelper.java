@@ -27,6 +27,7 @@ public class MovieDbHelper extends SQLiteOpenHelper {
                 MovieEntry.COLUMN_RELEASE_DATE + " TEXT NOT NULL, " +
                 MovieEntry.COLUMN_SYNOPSIS + " TEXT NOT NULL, " +
                 MovieEntry.COLUMN_IMAGE_URI + " TEXT NOT NULL, " +
+                MovieEntry.COLUMN_IMAGE_BACKDROP_URI + " TEXT NOT NULL, " +
                 MovieEntry.COLUMN_POPULARITY + " DOUBLE NOT NULL, " +
                 // No boolean field in sqlite, we use an integer representation.
                 MovieEntry.COLUMN_IN_LIST_POPULARITY + " INTEGER, " +

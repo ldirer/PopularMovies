@@ -1,4 +1,6 @@
-<resources>
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
+
     <string name="app_name">PopularMovies</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
@@ -21,6 +23,11 @@
     <string name="dummy_long">bougaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</string>
     <string name="reviews_header">Reviews for this movie</string>
     <string name="trailers_header">Watch these trailers on YouTube</string>
+    <string name="test_bold_html">Testing <b>BOLD</b> html.</string>
+    <!--<string name="trailer_list_empty">The movie database does not contain any trailer for this movie. Try your luck with <a href=\"<xliff:g id='movie_title'>%1$s</xliff:g>\">a youtube search</a>!-->
+    <string name="trailer_list_empty"><p>The movie database does not contain any trailer for this movie. Try your luck with a &lt;a href=\"https://www.youtube.com/results?search_query=\'trailer <xliff:g id='movie_title'>%1$s</xliff:g>\'\"&gt;YouTube search on <xliff:g id='movie_title'>%1$s</xliff:g>&lt;/a&gt;</p>!
+
+</string>
 
 
 </resources>
