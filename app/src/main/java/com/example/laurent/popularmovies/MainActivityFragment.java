@@ -1,6 +1,5 @@
 package com.example.laurent.popularmovies;
 
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
@@ -30,7 +29,7 @@ import com.example.laurent.popularmovies.data.MovieContract;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class MainActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>{
+public class MainActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
     private final String LOG_TAG = this.getClass().getSimpleName();
     public ImageListAdapter mImageListAdapter;
@@ -62,7 +61,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     static final int COL_MOVIE_IN_LIST_RATING = 9;
 
 
-
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
@@ -79,29 +77,20 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         LinearLayout rootView = (LinearLayout) inflater.inflate(R.layout.fragment_main, container, false);
-        GridView gridView = (GridView)rootView.findViewById(R.id.main_gridview);
+        GridView gridView = (GridView) rootView.findViewById(R.id.main_gridview);
         mProgress = (ProgressBar) rootView.findViewById(R.id.main_progressbar);
 
         mImageListAdapter = new ImageListAdapter(getActivity(), null, 0);
         // The task populates the adapter with image urls.
         gridView.setAdapter(mImageListAdapter);
-        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                // CursorAdapter returns a cursor at the correct position for getItem(), or null
-                // if it cannot seek to that position.
-                Cursor cursor = (Cursor) parent.getItemAtPosition(position);
-                if (cursor != null) {
-                    startActivity(new Intent(getActivity(), DetailActivity.class)
-                            .setData(MovieContract.MovieEntry.buildMovieUri(cursor.getLong(COL_MOVIE_ID))));
-                }
-            }
-        });
+        gridView.setOnItemClickListener((AdapterView.OnItemClickListener) getActivity());
 
         // We want to have an 'endless scrolling' effect.
         gridView.setOnScrollListener(new infiniteOnScrollListener(0));
+        // Scrolling triggers data fetching.
         gridView.scrollTo(0, 0);
+
+        new FetchMovieDataTask(this).execute();
         return rootView;
     }
 
@@ -160,19 +149,16 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         String sortByPreference = getSortByPreference();
         if (sortByPreference.equals(getString(R.string.sort_order_filter_favorites))) {
             selection = MovieContract.MovieEntry.COLUMN_IS_FAVORITE + " = 1";
-        }
-        else if (sortByPreference.equals(getString(R.string.sort_order_popularity))) {
+        } else if (sortByPreference.equals(getString(R.string.sort_order_popularity))) {
             // Don't sort here! It would give a different order compared to the (broken) tmdb api order.
             // ... And cause inconsistent order of movies: poor user experience.
             // Better have an approximate order by popularity as provided by the tmdb api.
 //            sortBy = MovieContract.MovieEntry.COLUMN_POPULARITY + " DESC";
             selection = MovieContract.MovieEntry.COLUMN_IN_LIST_POPULARITY + " = 1";
-        }
-        else if (sortByPreference.equals(getString(R.string.sort_order_rating))){
+        } else if (sortByPreference.equals(getString(R.string.sort_order_rating))) {
 //            sortBy = MovieContract.MovieEntry.COLUMN_RATING + " DESC";
             selection = MovieContract.MovieEntry.COLUMN_IN_LIST_RATING + " = 1";
-        }
-        else {
+        } else {
             Log.e(LOG_TAG, String.format("Unexpected sortByPreference value! Got: %s", sortByPreference));
             selection = MovieContract.MovieEntry.COLUMN_IN_LIST_POPULARITY + " = 1";
         }
@@ -180,8 +166,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
         if (sortBy == null) {
             sortBy = MovieContract.MovieEntry.COLUMN_INSERT_ORDER + " ASC";
-        }
-        else {
+        } else {
             sortBy += ", " + MovieContract.MovieEntry.COLUMN_INSERT_ORDER + " ASC";
         }
 
@@ -240,7 +225,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             Log.v(LOG_TAG, String.format("previousTotalItemCount: %d", this.previousTotalItemCount));
             Log.v(LOG_TAG, String.format("totalItemCount - (firstVisibleItem + visibleItemCount) <= this.bufferItemCount %b", totalItemCount - (firstVisibleItem + visibleItemCount) <= this.bufferItemCount));
 
-            if(this.previousTotalItemCount > totalItemCount) {
+            if (this.previousTotalItemCount > totalItemCount) {
                 // That happens when we change the sort order: we need to reset the previous count.
                 this.previousTotalItemCount = 0;
             }

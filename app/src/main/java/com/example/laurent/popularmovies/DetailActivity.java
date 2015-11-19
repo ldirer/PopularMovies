@@ -1,11 +1,11 @@
 package com.example.laurent.popularmovies;
 
+import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.Button;
 
 public class DetailActivity extends AppCompatActivity {
 
@@ -13,6 +13,25 @@ public class DetailActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
+
+        if (savedInstanceState == null) {
+            // Create the detail fragment and add it to the activity
+            // using a fragment transaction.
+
+            DetailActivityFragment fragment = new DetailActivityFragment();
+            fragment.setArguments(getIntent().getExtras());
+
+            getSupportFragmentManager().beginTransaction()
+                    .add(R.id.fragment_detail_container, fragment, DetailActivityFragment.DETAIL_FRAGMENT_TAG)
+                    .commit();
+
+            // We need to have the layout inflated before we look for ids!
+            // This toolbar code is dangerous in fragment since the ActionBar is an activity property, and an activity could have several fragments.
+            Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+            setSupportActionBar(toolbar);
+//            getSupportActionBar().setDisplayShowTitleEnabled(false);
+
+        }
     }
 
 
