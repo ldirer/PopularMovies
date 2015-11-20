@@ -7,7 +7,9 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.CollapsingToolbarLayout;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.ContextCompat;
@@ -78,6 +80,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     private TextView mReviewLinearLayoutEmpty;
     private TextView mTrailerLinearLayoutEmpty;
     private CollapsingToolbarLayout mCollapsingToolbarLayout;
+    private int mIsFavorite;
 
     private final static String[] DETAIL_COLUMNS = {
             MovieContract.MovieEntry.COLUMN_IMAGE_URI,
@@ -199,7 +202,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-//        mShareMenuItem = menu.findItem(R.id.action_share);
+        mShareMenuItem = menu.findItem(R.id.action_share);
     }
 
     public Intent getShareIntent(Uri uri) {
@@ -244,7 +247,8 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             mPosterView.setImageURI(Uri.parse(data.getString(COL_MOVIE_IMAGE_BACKDROP_URI)));
 
             Log.d(LOG_TAG, String.format("movie is favorite value: %d", data.getInt(COL_MOVIE_IS_FAVORITE)));
-            if (data.getInt(COL_MOVIE_IS_FAVORITE) == 0) {
+            mIsFavorite = data.getInt(COL_MOVIE_IS_FAVORITE);
+            if (mIsFavorite == 0) {
                 mFavoriteButton.setText(R.string.favorite_add_to_button_text);
                 mFavoriteFloatingActionButton.setImageDrawable(ContextCompat.getDrawable(getContext(), android.R.drawable.star_off));
             } else {
@@ -324,9 +328,22 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 
         Log.d(LOG_TAG, "in markMovieAsFavorite, toggle fav URI: " + toggleFavoriteUri.toString());
 
+
+        CoordinatorLayout coordinatorLayout = (CoordinatorLayout) getActivity().findViewById(R.id.coordinator_layout);
+        String snackbarText = null;
+        if (mIsFavorite == 0) {
+            snackbarText = "Movie marked as favorite!";
+        }
+        else {
+            snackbarText = "Movie removed from favorites!";
+        }
+
+        Snackbar.make(coordinatorLayout, snackbarText, Snackbar.LENGTH_SHORT)
+                .show();
         // TODO: check that this is a proper use of ContentProvider (it probably isn't).
         int rowsUpdated = getContext().getContentResolver().update(toggleFavoriteUri, null, null, null);
         Log.d(LOG_TAG, String.format("rows updated: %d", rowsUpdated));
+
     }
 
     @Override
@@ -435,7 +452,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
                         addTrailerToLinearLayout(mTrailerLinearLayout, trailer);
                     }
                     Intent shareIntent = getShareIntent(result.get(0).uri);
-//                    mShareMenuItem.setIntent(shareIntent);
+                    mShareMenuItem.setIntent(shareIntent);
                 }
             }
             }
