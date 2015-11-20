@@ -73,7 +73,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     private TextView mReleaseDateView;
     private TextView mSynopsysView;
     private SimpleDraweeView mPosterView;
-    private Button mFavoriteButton;
     private FloatingActionButton mFavoriteFloatingActionButton;
     private LinearLayout mReviewLinearLayout;
     private LinearLayout mTrailerLinearLayout;
@@ -141,7 +140,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 //            release_date_view = ((TextView) rootView.findViewById(R.id.detail_release_date));
         mSynopsysView = ((TextView) rootView.findViewById(R.id.detail_synopsis));
 //        mPosterView = (SimpleDraweeView) rootView.findViewById(R.id.detail_poster);
-        mFavoriteButton = (Button) rootView.findViewById(R.id.detail_favorite_button);
         mReviewLinearLayout = (LinearLayout)rootView.findViewById(R.id.detail_reviews);
         mReviewLinearLayoutEmpty = (TextView)rootView.findViewById(R.id.detail_reviews_empty);
         mTrailerLinearLayout = (LinearLayout)rootView.findViewById(R.id.detail_trailers);
@@ -151,13 +149,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         mPosterView = (SimpleDraweeView) getActivity().findViewById(R.id.toolbar_image);
         mCollapsingToolbarLayout = (CollapsingToolbarLayout) getActivity().findViewById(R.id.collapsingToolbarLayout);
         mFavoriteFloatingActionButton = (FloatingActionButton) getActivity().findViewById(R.id.detail_favorite_floating_action_button);
-
-        mFavoriteButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                markMovieAsFavorite();
-            }
-        });
 
         mFavoriteFloatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -249,10 +240,8 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             Log.d(LOG_TAG, String.format("movie is favorite value: %d", data.getInt(COL_MOVIE_IS_FAVORITE)));
             mIsFavorite = data.getInt(COL_MOVIE_IS_FAVORITE);
             if (mIsFavorite == 0) {
-                mFavoriteButton.setText(R.string.favorite_add_to_button_text);
                 mFavoriteFloatingActionButton.setImageDrawable(ContextCompat.getDrawable(getContext(), android.R.drawable.star_off));
             } else {
-                mFavoriteButton.setText(R.string.favorite_remove_button_text);
                 mFavoriteFloatingActionButton.setImageDrawable(ContextCompat.getDrawable(getContext(), android.R.drawable.star_on));
             }
 
