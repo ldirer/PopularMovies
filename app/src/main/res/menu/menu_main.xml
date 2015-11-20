@@ -14,6 +14,7 @@
         android:id="@+id/spinner_sort_by"
         app:showAsAction="ifRoom"
         app:actionViewClass="android.widget.Spinner"
+        android:title="@string/action_sort_by"
         />
 
 
