@@ -1,26 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="horizontal"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    >
-    
+    <android.support.percent.PercentRelativeLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="60dp">
+
     <ImageView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:id="@+id/detail_trailer_play_icon"
+        app:layout_widthPercent="30%"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
         android:src="@android:drawable/ic_media_play"
+        android:contentDescription="@string/content_description_detail_trailer_play_icon"
         />
 
     <TextView
         android:id="@+id/detail_trailer_name"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        app:layout_widthPercent="60%"
+        android:layout_height="match_parent"
+        android:layout_weight="2"
+        android:gravity="center"
         android:textStyle="italic"
         android:textAlignment="textStart"
+        android:layout_toRightOf="@id/detail_trailer_play_icon"
         />
 
     <View android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="?android:attr/listDivider"/>
-</LinearLayout>
+    </android.support.percent.PercentRelativeLayout>

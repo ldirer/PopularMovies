@@ -28,6 +28,7 @@
     <string name="trailer_list_empty"><p>The movie database does not contain any trailer for this movie. Try your luck with a &lt;a href=\"https://www.youtube.com/results?search_query=\'trailer <xliff:g id='movie_title'>%1$s</xliff:g>\'\"&gt;YouTube search on <xliff:g id='movie_title'>%1$s</xliff:g>&lt;/a&gt;</p>!
 
 </string>
+    <string name="content_description_detail_trailer_play_icon">Play video on youtube</string>
 
 
 </resources>
