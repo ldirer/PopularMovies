@@ -20,7 +20,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_gravity="center_horizontal"
+            android:layout_gravity="center"
             >
 
         <RatingBar
@@ -33,7 +33,13 @@
             android:numStars="5"
             android:rating="4.2"
             android:stepSize="0.1"
+            android:progressBackgroundTint="@color/deactivated_background"
+            android:progressTint="@color/accent"
+            android:secondaryProgressTint="@color/deactivated_background"
             />
+            <!--secondary is for half-filled stars.-->
+            <!--progressBackgroundTint for base (unfilled stars)-->
+
 
             <!--style="?android:ratingBarStyleSmall" gives vertically cut-off rating bar... -->
         <TextView

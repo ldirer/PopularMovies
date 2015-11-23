@@ -102,6 +102,8 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     private static final int COL_MOVIE_SYNOPSIS = 4;
     private static final int COL_MOVIE_TITLE = 5;
     private static final int COL_MOVIE_IMAGE_BACKDROP_URI = 6;
+    private FetchReviewsDataTask mFetchReviewsDataTask;
+    private FetchTrailersDataTask mFetchTrailersDataTask;
 //    private static final int COL_MOVIE_POPULARITY = 5;
 //    private static final int COL_MOVIE_INSERT_ORDER = 6;
 
@@ -132,8 +134,8 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             Bundle extras = new Bundle();
             extras.putInt(MainActivity.DETAIL_EXTRAS_ID, mId);
             // Fetching task populates the linear layouts.
-            new FetchReviewsDataTask(extras).execute();
-            new FetchTrailersDataTask(extras).execute();
+            mFetchReviewsDataTask = (FetchReviewsDataTask) new FetchReviewsDataTask(extras).execute();
+            mFetchTrailersDataTask = (FetchTrailersDataTask) new FetchTrailersDataTask(extras).execute();
         }
         mRatingView = (TextView) rootView.findViewById(R.id.detail_rating);
         mRatingBarView = (RatingBar) rootView.findViewById(R.id.detail_rating_bar);
@@ -173,6 +175,9 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 
     public Void addReviewToLinearLayout(LinearLayout parent, Review review) {
         Log.d(LOG_TAG, "in addReviewToLinearLayout");
+        // Here sometimes getActivity() returns a null object.
+        // This is because the fragment that launched the task is not attached to the activity anymore.
+        // In this case we prevent onPostExecute from being called by cancelling the task in onDetach.
         LayoutInflater li = (LayoutInflater) getActivity().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View reviewView = li.inflate(R.layout.detail_review_item, parent, false);
         TextView authorView = (TextView) reviewView.findViewById(R.id.detail_review_author);
@@ -241,9 +246,12 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             // Using a 5-star rating with ratings from tmdb on a 0-10 scale.
             mRatingBarView.setRating((float) data.getDouble(COL_MOVIE_RATING) / 2);
             mTitle = data.getString(COL_MOVIE_TITLE);
-            mTitleView.setText(data.getString(COL_MOVIE_TITLE));
             if (null != mCollapsingToolbarLayout) {
-                mCollapsingToolbarLayout.setTitle(data.getString(COL_MOVIE_TITLE));
+                mCollapsingToolbarLayout.setTitle(mTitle);
+            }
+            else {
+                mTitleView.setText(mTitle);
+                mTitleView.setTextSize(TypedValue.COMPLEX_UNIT_PX, findRightTextSize(mTitleView));
             }
 //            release_date_view.setText(getYearFromDate(data.getString(COL_MOVIE_RELEASE_DATE)));
             mSynopsysView.setText(data.getString(COL_MOVIE_SYNOPSIS));
@@ -257,14 +265,21 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
                 mFavoriteFloatingActionButton.setImageDrawable(ContextCompat.getDrawable(getContext(), android.R.drawable.star_on));
             }
 
-            mTitleView.getWidth();
-            mTitleView.getLineHeight();
-            mTitleView.setTextSize(TypedValue.COMPLEX_UNIT_PX,
-                    findRightTextSize(mTitleView));
         }
     }
 
 
+    @Override
+    public void onDetach() {
+        super.onDetach();
+        // This might not be very clean: we should be checking for isCancelled() periodically in doInBackground.
+        if (null != mFetchReviewsDataTask) {
+            mFetchReviewsDataTask.cancel(true);
+        }
+        if (null != mFetchTrailersDataTask) {
+            mFetchTrailersDataTask.cancel(true);
+        }
+    }
 
     /**
      * Dichotomic search to find a text size that fits.
