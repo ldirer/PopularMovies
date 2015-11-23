@@ -13,12 +13,14 @@
         android:paddingStart="@dimen/activity_horizontal_margin"
         android:paddingEnd="@dimen/activity_horizontal_margin"
         android:orientation="horizontal"
+        android:background="@android:color/white"
         >
         
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:layout_gravity="center_horizontal"
             >
 
         <RatingBar
@@ -33,9 +35,10 @@
             android:stepSize="0.1"
             />
 
+            <!--style="?android:ratingBarStyleSmall" gives vertically cut-off rating bar... -->
         <TextView
             android:id="@+id/detail_rating"
-            style="?android:ratingBarStyleSmall"
+            style="?android:ratingBarStyleIndicator"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
@@ -58,6 +61,7 @@
         android:layout_weight="1"
         android:paddingLeft="@dimen/activity_horizontal_margin"
         android:paddingRight="@dimen/activity_horizontal_margin"
+        android:background="@android:color/white"
         android:text="@string/dummy_long" />
 
 </LinearLayout>

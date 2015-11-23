@@ -66,6 +66,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     private String mTitle;
 
     private MenuItem mShareMenuItem;
+    private FloatingActionButton mShareFloatingActionButton;
 
     private TextView mRatingView;
     private RatingBar mRatingBarView;
@@ -150,6 +151,15 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         mCollapsingToolbarLayout = (CollapsingToolbarLayout) getActivity().findViewById(R.id.collapsingToolbarLayout);
         mFavoriteFloatingActionButton = (FloatingActionButton) getActivity().findViewById(R.id.detail_favorite_floating_action_button);
 
+        if (null == getActivity().findViewById(R.id.toolbar_image)) {
+            // TODO: move the code for setActionBar in the fragment. See how Sunshine did it.
+            // TODO: it'll prevent this boilerplate code.
+            mPosterView = (SimpleDraweeView) rootView.findViewById(R.id.toolbar_image);
+            mCollapsingToolbarLayout = (CollapsingToolbarLayout) rootView.findViewById(R.id.collapsingToolbarLayout);
+            mFavoriteFloatingActionButton = (FloatingActionButton) rootView.findViewById(R.id.detail_favorite_floating_action_button);
+            mShareFloatingActionButton = (FloatingActionButton) rootView.findViewById(R.id.action_share);
+        }
+
         mFavoriteFloatingActionButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -232,7 +242,9 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             mRatingBarView.setRating((float) data.getDouble(COL_MOVIE_RATING) / 2);
             mTitle = data.getString(COL_MOVIE_TITLE);
             mTitleView.setText(data.getString(COL_MOVIE_TITLE));
-            mCollapsingToolbarLayout.setTitle(data.getString(COL_MOVIE_TITLE));
+            if (null != mCollapsingToolbarLayout) {
+                mCollapsingToolbarLayout.setTitle(data.getString(COL_MOVIE_TITLE));
+            }
 //            release_date_view.setText(getYearFromDate(data.getString(COL_MOVIE_RELEASE_DATE)));
             mSynopsysView.setText(data.getString(COL_MOVIE_SYNOPSIS));
             mPosterView.setImageURI(Uri.parse(data.getString(COL_MOVIE_IMAGE_BACKDROP_URI)));
@@ -440,8 +452,18 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
                     for (Trailer trailer:result) {
                         addTrailerToLinearLayout(mTrailerLinearLayout, trailer);
                     }
-                    Intent shareIntent = getShareIntent(result.get(0).uri);
-                    mShareMenuItem.setIntent(shareIntent);
+                    final Intent shareIntent = getShareIntent(result.get(0).uri);
+                    if (null == mShareMenuItem) {
+                        mShareFloatingActionButton.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                startActivity(shareIntent);
+                            }
+                        });
+                    }
+                    else {
+                        mShareMenuItem.setIntent(shareIntent);
+                    }
                 }
             }
             }
