@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.CoordinatorLayout;
@@ -164,6 +165,14 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             mCollapsingToolbarLayout = (CollapsingToolbarLayout) rootView.findViewById(R.id.collapsingToolbarLayout);
             mFavoriteFloatingActionButton = (FloatingActionButton) rootView.findViewById(R.id.detail_favorite_floating_action_button);
             mShareFloatingActionButton = (FloatingActionButton) rootView.findViewById(R.id.action_share);
+        }
+
+
+        // Fixing floating action button margin for <20 api versions
+        if (Build.VERSION.SDK_INT < 55) { //Build.VERSION_CODES.LOLLIPOP) {
+            ViewGroup.MarginLayoutParams marginParams = (ViewGroup.MarginLayoutParams) mFavoriteFloatingActionButton.getLayoutParams();
+            marginParams.setMargins(0, 0, 0, 0);
+            mFavoriteFloatingActionButton.setLayoutParams(marginParams);
         }
 
         mFavoriteFloatingActionButton.setOnClickListener(new View.OnClickListener() {
