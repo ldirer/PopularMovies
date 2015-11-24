@@ -242,7 +242,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     public void onLoadFinished(Loader loader, Cursor data) {
         if (data != null && data.moveToFirst()) {
             Log.v(LOG_TAG, "in onLoadFinished with non null, non empty data");
-            mRatingView.setText(String.format("%.2f/10", data.getDouble(COL_MOVIE_RATING)));
+            mRatingView.setText(String.format("%.2f/5", data.getDouble(COL_MOVIE_RATING) / 2));
             // Using a 5-star rating with ratings from tmdb on a 0-10 scale.
             mRatingBarView.setRating((float) data.getDouble(COL_MOVIE_RATING) / 2);
             mTitle = data.getString(COL_MOVIE_TITLE);
