@@ -21,7 +21,7 @@
             <TextView
                 android:id="@+id/detail_title"
                 android:layout_width="match_parent"
-                android:layout_height="100dp"
+                android:layout_height="50dp"
                 android:background="@android:color/holo_blue_dark"
                 android:elevation="4dp"
                 android:gravity="center_vertical"

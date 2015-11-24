@@ -9,27 +9,19 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_weight="0"
         android:paddingStart="@dimen/activity_horizontal_margin"
         android:paddingEnd="@dimen/activity_horizontal_margin"
         android:orientation="horizontal"
         android:background="@android:color/white"
         >
         
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_gravity="center"
-            >
 
         <RatingBar
             android:id="@+id/detail_rating_bar"
-            style="?android:ratingBarStyleSmall"
+            style="?android:ratingBarStyle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:layout_weight="1"
+            android:layout_gravity="center"
             android:numStars="5"
             android:rating="4.2"
             android:stepSize="0.1"
@@ -41,23 +33,18 @@
             <!--progressBackgroundTint for base (unfilled stars)-->
 
 
-            <!--style="?android:ratingBarStyleSmall" gives vertically cut-off rating bar... -->
+
         <TextView
             android:id="@+id/detail_rating"
             style="?android:ratingBarStyleIndicator"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
+            android:gravity="center"
             android:layout_weight="1"
             android:text="8.4/10"
+            android:textColor="@color/secondary_text"
             />
-        </LinearLayout>
-        <!--Dummy blank space view. Can't get the button to stick to the right side otherwise.-->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1" />
-
     </LinearLayout>
 
     <TextView
