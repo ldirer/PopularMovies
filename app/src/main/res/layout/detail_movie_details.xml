@@ -28,6 +28,7 @@
             android:progressBackgroundTint="@color/deactivated_background"
             android:progressTint="@color/accent"
             android:secondaryProgressTint="@color/deactivated_background"
+            android:isIndicator="true"
             />
             <!--secondary is for half-filled stars.-->
             <!--progressBackgroundTint for base (unfilled stars)-->
