@@ -19,6 +19,7 @@ import android.support.v7.widget.Toolbar;
 import android.text.Html;
 import android.text.TextPaint;
 import android.text.method.LinkMovementMethod;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -44,6 +45,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -294,7 +296,13 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         int targetWidth = textWidth - view.getPaddingLeft() - view.getPaddingRight();
         // We don't want to use view.getTextSize() because repeated calls will gradually shrink the text!!
 //        float hi = view.getTextSize();
-        float hi = getResources().getInteger(R.integer.detail_max_title_font);
+
+//      Get view height in dp:  http://stackoverflow.com/questions/4605527/converting-pixels-to-dp
+        DisplayMetrics metrics = getResources().getDisplayMetrics();
+        float dpHeight = view.getHeight() / (metrics.densityDpi / 160f);
+        // We take the max so that the text fits on one line and does not overflow vertically.
+        float hi = Math.min(getResources().getInteger(R.integer.detail_max_title_font), dpHeight);
+
         float lo = 10;
         final float threshold = 0.5f; // How close we have to be
 
@@ -304,7 +312,8 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         while ((hi - lo) > threshold) {
             float size = (hi + lo) / 2;
             testPaint.setTextSize(size);
-            if (testPaint.measureText(text) >= targetWidth)
+            // For some reason if we target exactly targetWidth the text still does not fit on a line.
+            if (testPaint.measureText(text) >= targetWidth / 1.5)
                 hi = size; // too big
             else
                 lo = size; // too small
