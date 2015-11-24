@@ -117,6 +117,8 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         getLoaderManager().initLoader(DETAIL_LOADER, null, this);
+        // This prevents the AsyncTask from using detached fragments (NPE).
+        setRetainInstance(true);
     }
 
     private void initInstances() {
