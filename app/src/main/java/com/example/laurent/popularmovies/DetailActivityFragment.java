@@ -58,7 +58,7 @@ import java.util.Vector;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class DetailActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>, ViewTreeObserver.OnScrollChangedListener {
+public class DetailActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>  {
 
     // Fragment Tags are useful on orientation change when activity is destroyed + re-created.
     // If the fragment has already been created and it has a tag, it can be retrieved.
@@ -404,7 +404,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         float hi = Math.min(getResources().getInteger(R.integer.detail_max_title_font), dpHeight);
 
         float lo = 10;
-        final float threshold = 0.5f; // How close we have to be
+        final float threshold = 2f; // How close we have to be
 
         TextPaint testPaint = new TextPaint();
         testPaint.set(view.getPaint());
@@ -464,12 +464,10 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 
         Snackbar.make(coordinatorLayout, snackbarText, Snackbar.LENGTH_SHORT)
                 .show();
-        // TODO: check that this is a proper use of ContentProvider (it probably isn't).
         int rowsUpdated = getContext().getContentResolver().update(toggleFavoriteUri, null, null, null);
         Log.d(LOG_TAG, String.format("rows updated: %d", rowsUpdated));
 
         // TODO: save reviews & trailers to db.
-
         for (int i = 0; i < mReviews.size(); i++) {
             Review review = mReviews.get(i);
             ContentValues cvReview = new ContentValues();
@@ -494,10 +492,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 //        }
     }
 
-    @Override
-    public void onScrollChanged() {
-
-    }
 
     public class FetchTrailersDataTask extends AsyncTask<Void, Void, List<Trailer>>{
 

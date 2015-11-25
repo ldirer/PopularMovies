@@ -34,6 +34,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     private final String LOG_TAG = this.getClass().getSimpleName();
     public ImageListAdapter mImageListAdapter;
     protected ProgressBar mProgress;
+    public FetchMovieDataTask mFetchMoviesDataTask;
 
     private static final int MOVIE_LOADER = 0;
 
@@ -75,6 +76,15 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     }
 
     @Override
+    public void onDetach() {
+        super.onDetach();
+        if (null != mFetchMoviesDataTask) {
+            // Prevents onPostExecute from being called with a 'loose' fragment (no activity attached)
+            mFetchMoviesDataTask.cancel(true);
+        }
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         LinearLayout rootView = (LinearLayout) inflater.inflate(R.layout.fragment_main, container, false);
@@ -91,7 +101,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         gridView.scrollTo(0, 0);
 
         // The task populates the adapter with image urls.
-        new FetchMovieDataTask(this).execute();
+        mFetchMoviesDataTask = (FetchMovieDataTask) new FetchMovieDataTask(this).execute();
         return rootView;
     }
 
