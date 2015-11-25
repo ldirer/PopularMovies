@@ -48,6 +48,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -188,10 +189,10 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             updateReviewsUI(mReviews);
         }
 
-        if(null != mTitle) {
-            // We have the title already, we don't want to wait for onLoadFinished to resize the text.
-            mTitleView.setTextSize(TypedValue.COMPLEX_UNIT_PX, findRightTextSize(mTitleView));
-        }
+//        if(null != mTitle) {
+//            // We have the title already, we don't want to wait for onLoadFinished to resize the text.
+//            mTitleView.setTextSize(TypedValue.COMPLEX_UNIT_PX, findRightTextSize(mTitleView));
+//        }
 
         // Fixing floating action button margin for <20 api versions
         if (Build.VERSION.SDK_INT < 55) { //Build.VERSION_CODES.LOLLIPOP) {
@@ -329,7 +330,10 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             }
             else {
                 mTitleView.setText(mTitle);
-                mTitleView.setTextSize(TypedValue.COMPLEX_UNIT_PX, findRightTextSize(mTitleView));
+                // We cannot compute the right text size if the view is not fully rendered.
+                if(mTitleView.getWidth() != 0) {
+                    mTitleView.setTextSize(TypedValue.COMPLEX_UNIT_PX, findRightTextSize(mTitleView));
+                }
             }
 
             mSynopsysView.setText(data.getString(COL_MOVIE_SYNOPSIS));
@@ -384,6 +388,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
      * @return A text size that works (in pixels).
      */
     private float findRightTextSize(TextView view) {
+        long t1 = System.currentTimeMillis();
         // http://stackoverflow.com/questions/2617266/how-to-adjust-text-font-size-to-fit-textview
         String text = (String) view.getText();
         int textWidth = view.getWidth();
@@ -413,6 +418,8 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
                 lo = size; // too small
         }
         // Use lo so that we undershoot rather than overshoot
+        long t2 = System.currentTimeMillis();
+        Log.d(LOG_TAG, String.format("findRightTextSize ran in %d ms", (t2 - t1)));
         return lo;
     }
 
