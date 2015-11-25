@@ -42,6 +42,7 @@ public class MovieContract {
     // At least, let's hope not.  Don't be that dev, reader.  Don't be that dev.
     public static final String PATH_MOVIES = "movies";
     public static final String PATH_REVIEWS = "reviews";
+    public static final String PATH_TRAILERS = "trailers";
 
     /* Inner class that defines the table contents of the weather table */
     public static final class MovieEntry implements BaseColumns {
@@ -112,10 +113,16 @@ public class MovieContract {
 
         public static final String TABLE_NAME = "trailers";
         public static final String COLUMN_ID = "_id";
-        public static final String COLUMN_TRAILER_URL = "url";
+        public static final String COLUMN_TRAILER_URL_KEY = "url";
         public static final String COLUMN_TRAILER_NAME = "name";
         public static final String COLUMN_MOVIE_KEY = "movie_id";
 
+        public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon()
+                .appendPath(PATH_TRAILERS).build();
+
+        public static Uri buildTrailerUri(long id) {
+            return ContentUris.withAppendedId(CONTENT_URI, id);
+        }
     }
 
 }

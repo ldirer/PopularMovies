@@ -124,11 +124,11 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 
     private static final String[] TRAILERS_COLUMNS = {
             MovieContract.TrailerEntry.COLUMN_TRAILER_NAME,
-            MovieContract.TrailerEntry.COLUMN_TRAILER_URL,
+            MovieContract.TrailerEntry.COLUMN_TRAILER_URL_KEY,
     };
 
     private static final int COL_TRAILER_NAME = 0;
-    private static final int COL_TRAILER_URL = 1;
+    private static final int COL_TRAILER_URL_KEY = 1;
 
     public DetailActivityFragment() {
         setHasOptionsMenu(true);
@@ -471,41 +471,37 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         }
 
 
-//        for (int i = 0; i < mReviews.size(); i++) {
-//            Review review = mReviews.get(i);
-//            ContentValues cvReview = new ContentValues();
-//            cvReview.put(MovieContract.ReviewEntry.COLUMN_REVIEW_AUTHOR, review.author);
-//            cvReview.put(MovieContract.ReviewEntry.COLUMN_REVIEW_BODY, review.body);
-//            Uri insertedReview = getContext().getContentResolver().insert(
-//                    mMovieUri.buildUpon().appendPath(MovieContract.PATH_REVIEWS).build(),
-//                    cvReview);
-//            Log.d(LOG_TAG, "inserted review at uri:" + insertedReview.toString());
-//        }
+        for (int i = 0; i < mTrailers.size(); i++) {
+            Trailer trailer = mTrailers.get(i);
+            ContentValues cvTrailer = new ContentValues();
+            cvTrailer.put(MovieContract.TrailerEntry.COLUMN_TRAILER_NAME, trailer.name);
+            cvTrailer.put(MovieContract.TrailerEntry.COLUMN_TRAILER_URL_KEY, trailer.uri.toString());
+            Uri insertedTrailer = getContext().getContentResolver().insert(
+                    mMovieUri.buildUpon().appendPath(MovieContract.PATH_TRAILERS).build(),
+                    cvTrailer);
+            Log.d(LOG_TAG, "inserted trailer at uri:" + insertedTrailer.toString());
+        }
     }
 
 
     public class FetchTrailersDataTask extends AsyncTask<Void, Void, List<Trailer>> {
 
         private String baseUri;
+        private Uri baseProviderUri;
         private String LOG_TAG = FetchTrailersDataTask.class.getSimpleName();
 
         public FetchTrailersDataTask(Bundle extras) {
             super();
             Integer movieId = extras.getInt(MainActivity.DETAIL_EXTRAS_ID);
             this.baseUri = String.format("https://api.themoviedb.org/3/movie/%d/videos", movieId);
+            baseProviderUri = MovieContract.MovieEntry.buildMovieUri(movieId);
         }
 
-        @Override
-        protected List<Trailer> doInBackground(Void... params) {
-            Uri trailersUri = Uri.parse(baseUri).buildUpon()
-                    .appendQueryParameter("api_key", MainActivity.API_KEY)
-                    .build();
-
-            Log.d(LOG_TAG, trailersUri.toString());
+        public List<Trailer> FetchTrailersFromNetwork(Uri trailersUri) {
             List<Trailer> trailers = null;
-            String trailersJsonStr = null;
+            String trailersJsonStr;
             HttpURLConnection urlConnection = null;
-            BufferedReader reader = null;
+            BufferedReader reader;
             try {
                 URL url = new URL(trailersUri.toString());
                 urlConnection = (HttpURLConnection) url.openConnection();
@@ -540,6 +536,40 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
                 }
             }
             return trailers;
+        }
+
+        @Override
+        protected List<Trailer> doInBackground(Void... params) {
+            Uri trailersUri = Uri.parse(baseUri).buildUpon()
+                    .appendQueryParameter("api_key", MainActivity.API_KEY)
+                    .build();
+
+            Log.d(LOG_TAG, trailersUri.toString());
+            List<Trailer> trailers = null;
+            if (mIsFavorite == 1) {
+                Log.d(LOG_TAG, "Using database to fetch favorite trailers...");
+                trailers = new ArrayList<Trailer>();
+                Uri trailersProviderUri = baseProviderUri.buildUpon().appendPath(MovieContract.PATH_TRAILERS)
+                        .build();
+                Cursor trailersCursor = getContext().getContentResolver().query(trailersProviderUri, TRAILERS_COLUMNS, null,
+                        null, null);
+
+                if (trailersCursor.moveToFirst()) {
+                    do {
+                        String trailerName = trailersCursor.getString(COL_TRAILER_NAME);
+                        String trailerKey = trailersCursor.getString(COL_TRAILER_URL_KEY);
+                        trailers.add(new Trailer(trailerName, trailerKey));
+                    } while (trailersCursor.moveToNext());
+                } else {
+                    Log.d(LOG_TAG, "No trailers found in DB!");
+                }
+                trailersCursor.close();
+            }
+            else {
+                trailers = FetchTrailersFromNetwork(trailersUri);
+            }
+            return trailers;
+
         }
 
         private List<Trailer> getTrailerDataFromJson(String trailersJsonStr) throws JSONException {

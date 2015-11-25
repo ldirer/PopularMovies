@@ -40,7 +40,7 @@ public class MovieProvider extends ContentProvider {
     static final int MOVIE_TRAILERS = 104;
 
     private static final SQLiteQueryBuilder sMovieWithReviewsQueryBuilder;
-
+    private static final SQLiteQueryBuilder sMovieWithTrailersQueryBuilder;
     static {
         sMovieWithReviewsQueryBuilder = new SQLiteQueryBuilder();
         sMovieWithReviewsQueryBuilder.setTables(
@@ -48,6 +48,15 @@ public class MovieProvider extends ContentProvider {
                         MovieContract.ReviewEntry.TABLE_NAME + " ON " +
                         MovieContract.MovieEntry.TABLE_NAME + "." + MovieContract.MovieEntry.COLUMN_ID + " = " +
                         MovieContract.ReviewEntry.TABLE_NAME + "." + MovieContract.ReviewEntry.COLUMN_MOVIE_KEY);
+    }
+
+    static {
+        sMovieWithTrailersQueryBuilder = new SQLiteQueryBuilder();
+        sMovieWithTrailersQueryBuilder.setTables(
+                MovieContract.MovieEntry.TABLE_NAME + " INNER JOIN " +
+                        MovieContract.TrailerEntry.TABLE_NAME + " ON " +
+                        MovieContract.MovieEntry.TABLE_NAME + "." + MovieContract.MovieEntry.COLUMN_ID + " = " +
+                        MovieContract.TrailerEntry.TABLE_NAME + "." + MovieContract.TrailerEntry.COLUMN_MOVIE_KEY);
     }
 
     static UriMatcher buildUriMatcher() {
@@ -120,6 +129,17 @@ public class MovieProvider extends ContentProvider {
                         sortOrder);
                 break;
             }
+            case MOVIE_TRAILERS: {
+                retCursor = sMovieWithTrailersQueryBuilder.query(
+                        mOpenHelper.getReadableDatabase(),
+                        projection,
+                        getSelectionWithIdFromUri(uri, selection),
+                        selectionArgs,
+                        null,
+                        null,
+                        sortOrder);
+                break;
+            }
             case MOVIES: {
                 retCursor = mOpenHelper.getReadableDatabase().query(
                         MovieContract.MovieEntry.TABLE_NAME,
@@ -160,17 +180,26 @@ public class MovieProvider extends ContentProvider {
 
         switch (match) {
             case MOVIE_REVIEWS: {
+                // Add the movieId foreign key from the uri into the values.
                 long movieId = MovieContract.MovieEntry.getIdFromUri(uri);
                 values.put(MovieContract.ReviewEntry.COLUMN_MOVIE_KEY, movieId);
                 long _id = db.insert(MovieContract.ReviewEntry.TABLE_NAME, null, values);
                 returnUri = MovieContract.ReviewEntry.buildReviewUri(_id);
                 break;
             }
+            case MOVIE_TRAILERS: {
+                // Add the movieId foreign key from the uri into the values.
+                long movieId = MovieContract.MovieEntry.getIdFromUri(uri);
+                values.put(MovieContract.TrailerEntry.COLUMN_MOVIE_KEY, movieId);
+                long _id = db.insert(MovieContract.TrailerEntry.TABLE_NAME, null, values);
+                returnUri = MovieContract.TrailerEntry.buildTrailerUri(_id);
+                break;
+            }
             case MOVIES: {
                 // I wanted to use the following, but the behavior about the returned id does not seem to match the documented one.
                 // https://code.google.com/p/android/issues/detail?id=13045
-//                long _id = db.insertWithOnConflict(MovieContract.MovieEntry.TABLE_NAME, null, values,
-//                        SQLiteDatabase.CONFLICT_IGNORE);
+                // long _id = db.insertWithOnConflict(MovieContract.MovieEntry.TABLE_NAME, null, values,
+                // SQLiteDatabase.CONFLICT_IGNORE);
 
                 // We first try to select a record with the given id. If it exists we don't do anything, otherwise we insert.
                 // Basically doing db.insertWithOnConflict with CONFLICT_IGNORE should do.

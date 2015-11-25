@@ -51,7 +51,7 @@ public class MovieDbHelper extends SQLiteOpenHelper {
         final String createTrailersTable = "CREATE TABLE " + TrailerEntry.TABLE_NAME + "(" +
                 TrailerEntry.COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                 TrailerEntry.COLUMN_TRAILER_NAME + " TEXT, " +
-                TrailerEntry.COLUMN_TRAILER_URL + " TEXT, " +
+                TrailerEntry.COLUMN_TRAILER_URL_KEY + " TEXT, " +
                 TrailerEntry.COLUMN_MOVIE_KEY + " INTEGER NON NULL, " +
                 " FOREIGN KEY (" + TrailerEntry.COLUMN_MOVIE_KEY + ") REFERENCES " +
                 MovieEntry.TABLE_NAME + " (" + MovieEntry.COLUMN_ID + ")"
@@ -62,7 +62,7 @@ public class MovieDbHelper extends SQLiteOpenHelper {
 
         db.execSQL(createMovieTable);
         db.execSQL(createReviewsTable);
-//        db.execSQL(createTrailersTable);
+        db.execSQL(createTrailersTable);
     }
 
 
