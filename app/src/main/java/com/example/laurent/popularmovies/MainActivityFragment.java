@@ -64,6 +64,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        setRetainInstance(true);
         getLoaderManager().initLoader(MOVIE_LOADER, null, this);
     }
 
