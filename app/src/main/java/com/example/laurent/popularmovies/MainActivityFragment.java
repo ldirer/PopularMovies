@@ -100,8 +100,10 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         // Scrolling triggers data fetching.
         gridView.scrollTo(0, 0);
 
-        // The task populates the adapter with image urls.
-        mFetchMoviesDataTask = (FetchMovieDataTask) new FetchMovieDataTask(this).execute();
+        if(null != mFetchMoviesDataTask) {
+            // The task populates the adapter with image urls.
+            mFetchMoviesDataTask = (FetchMovieDataTask) new FetchMovieDataTask(this).execute();
+        }
         return rootView;
     }
 
