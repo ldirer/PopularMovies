@@ -217,7 +217,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         if (trailers.size() == 0) {
             mTrailerLinearLayout.setVisibility(View.GONE);
             mTrailerLinearLayoutEmpty.setVisibility(View.VISIBLE);
-            // Here we're not sure that mTitle is not null... But we can hope for the best!
             mTrailerLinearLayoutEmpty.setText(Html.fromHtml(getString(R.string.trailer_list_empty, mTitle)));
             mTrailerLinearLayoutEmpty.setMovementMethod(LinkMovementMethod.getInstance());
         } else {
