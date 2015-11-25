@@ -53,7 +53,7 @@ import java.util.Timer;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class DetailActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>  {
+public class DetailActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
     // Fragment Tags are useful on orientation change when activity is destroyed + re-created.
     // If the fragment has already been created and it has a tag, it can be retrieved.
@@ -100,7 +100,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     };
 
 
-
     private static final int COL_MOVIE_IMAGE_URI = 0;
     private static final int COL_MOVIE_IS_FAVORITE = 1;
     private static final int COL_MOVIE_RATING = 2;
@@ -112,7 +111,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     private FetchTrailersDataTask mFetchTrailersDataTask = null;
 //    private static final int COL_MOVIE_POPULARITY = 5;
 //    private static final int COL_MOVIE_INSERT_ORDER = 6;
-
 
 
     private static final String[] REVIEWS_COLUMNS = {
@@ -163,10 +161,10 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         mRatingBarView = (RatingBar) rootView.findViewById(R.id.detail_rating_bar);
         mTitleView = (TextView) rootView.findViewById(R.id.detail_title);
         mSynopsysView = ((TextView) rootView.findViewById(R.id.detail_synopsis));
-        mReviewLinearLayout = (LinearLayout)rootView.findViewById(R.id.detail_reviews);
-        mReviewLinearLayoutEmpty = (TextView)rootView.findViewById(R.id.detail_reviews_empty);
-        mTrailerLinearLayout = (LinearLayout)rootView.findViewById(R.id.detail_trailers);
-        mTrailerLinearLayoutEmpty = (TextView)rootView.findViewById(R.id.detail_trailers_empty);
+        mReviewLinearLayout = (LinearLayout) rootView.findViewById(R.id.detail_reviews);
+        mReviewLinearLayoutEmpty = (TextView) rootView.findViewById(R.id.detail_reviews_empty);
+        mTrailerLinearLayout = (LinearLayout) rootView.findViewById(R.id.detail_trailers);
+        mTrailerLinearLayoutEmpty = (TextView) rootView.findViewById(R.id.detail_trailers_empty);
 
         // Toolbar-related
         mPosterView = (SimpleDraweeView) getActivity().findViewById(R.id.toolbar_image);
@@ -182,10 +180,10 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             mShareFloatingActionButton = (FloatingActionButton) rootView.findViewById(R.id.action_share);
         }
 
-        if(mTrailersFetched) {
+        if (mTrailersFetched) {
             updateTrailersUI(mTrailers);
         }
-        if(mReviewsFetched) {
+        if (mReviewsFetched) {
             updateReviewsUI(mReviews);
         }
 
@@ -214,7 +212,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 
 
     public void updateReviewsUI(List<Review> reviews) {
-        for (Review review:reviews) {
+        for (Review review : reviews) {
             addReviewToLinearLayout(mReviewLinearLayout, review);
         }
         if (reviews.size() == 0) {
@@ -230,9 +228,8 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             // Here we're not sure that mTitle is not null... But we can hope for the best!
             mTrailerLinearLayoutEmpty.setText(Html.fromHtml(getString(R.string.trailer_list_empty, mTitle)));
             mTrailerLinearLayoutEmpty.setMovementMethod(LinkMovementMethod.getInstance());
-        }
-        else {
-            for (Trailer trailer:trailers) {
+        } else {
+            for (Trailer trailer : trailers) {
                 addTrailerToLinearLayout(mTrailerLinearLayout, trailer);
             }
             final Intent shareIntent = getShareIntent(trailers.get(0).uri);
@@ -243,8 +240,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
                         startActivity(shareIntent);
                     }
                 });
-            }
-            else {
+            } else {
                 mShareMenuItem.setIntent(shareIntent);
             }
         }
@@ -327,11 +323,10 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             mTitle += " (" + getYearFromDate(data.getString(COL_MOVIE_RELEASE_DATE)) + ")";
             if (null != mCollapsingToolbarLayout) {
                 mCollapsingToolbarLayout.setTitle(mTitle);
-            }
-            else {
+            } else {
                 mTitleView.setText(mTitle);
                 // We cannot compute the right text size if the view is not fully rendered.
-                if(mTitleView.getWidth() != 0) {
+                if (mTitleView.getWidth() != 0) {
                     mTitleView.setTextSize(TypedValue.COMPLEX_UNIT_PX, findRightTextSize(mTitleView));
                 }
             }
@@ -342,7 +337,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             Log.d(LOG_TAG, String.format("movie is favorite value: %d", data.getInt(COL_MOVIE_IS_FAVORITE)));
             mIsFavorite = data.getInt(COL_MOVIE_IS_FAVORITE);
 
-            if(null == mFetchReviewsDataTask || null == mFetchTrailersDataTask) {
+            if (null == mFetchReviewsDataTask || null == mFetchTrailersDataTask) {
                 Bundle extras = new Bundle();
                 extras.putInt(MainActivity.DETAIL_EXTRAS_ID, mId);
                 // Fetching task populates the linear layouts.
@@ -388,7 +383,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
      * @return A text size that works (in pixels).
      */
     private float findRightTextSize(TextView view) {
-        long t1 = System.currentTimeMillis();
         // http://stackoverflow.com/questions/2617266/how-to-adjust-text-font-size-to-fit-textview
         String text = (String) view.getText();
         int textWidth = view.getWidth();
@@ -418,8 +412,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
                 lo = size; // too small
         }
         // Use lo so that we undershoot rather than overshoot
-        long t2 = System.currentTimeMillis();
-        Log.d(LOG_TAG, String.format("findRightTextSize ran in %d ms", (t2 - t1)));
         return lo;
     }
 
@@ -440,11 +432,9 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     }
 
 
-
     /**
      * We don't need to modify the view here: it's done by the loader when it notices data has
      * changed.
-     *
      */
     public void markMovieAsFavorite() {
         // Update id with favorite = 1 if it was 0, 0 if it was 1.
@@ -494,7 +484,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     }
 
 
-    public class FetchTrailersDataTask extends AsyncTask<Void, Void, List<Trailer>>{
+    public class FetchTrailersDataTask extends AsyncTask<Void, Void, List<Trailer>> {
 
         private String baseUri;
         private String LOG_TAG = FetchTrailersDataTask.class.getSimpleName();
@@ -585,7 +575,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
                         Integer.toString(result.size())));
                 updateTrailersUI(mTrailers);
             }
-            }
+        }
     }
 
     public class FetchReviewsDataTask extends AsyncTask<Void, Void, List<Review>> {
@@ -620,18 +610,16 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
                         null, null);
 
                 if (reviewsCursor.moveToFirst()) {
-                    do{
+                    do {
                         String reviewAuthor = reviewsCursor.getString(COL_REVIEW_AUTHOR);
                         String reviewBody = reviewsCursor.getString(COL_REVIEW_BODY);
                         reviews.add(new Review(reviewAuthor, reviewBody));
-                    }while(reviewsCursor.moveToNext());
-                }
-                else{
+                    } while (reviewsCursor.moveToNext());
+                } else {
                     Log.d(LOG_TAG, "No reviews found in DB!");
                 }
                 reviewsCursor.close();
-                }
-            else {
+            } else {
                 reviews = getReviewsFromNetwork(reviewsUri);
             }
             return reviews;
@@ -691,7 +679,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
                 updateReviewsUI(mReviews);
             }
         }
-
 
 
         private List<Review> getReviewDataFromJson(String reviewsJsonStr) throws JSONException {
