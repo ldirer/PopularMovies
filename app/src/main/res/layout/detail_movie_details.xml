@@ -43,7 +43,6 @@
             android:layout_gravity="center"
             android:gravity="center"
             android:layout_weight="1"
-            android:text="8.4/10"
             android:textColor="@color/secondary_text"
             />
     </LinearLayout>
@@ -56,6 +55,6 @@
         android:paddingLeft="@dimen/activity_horizontal_margin"
         android:paddingRight="@dimen/activity_horizontal_margin"
         android:background="@android:color/white"
-        android:text="@string/dummy_long" />
+        />
 
 </LinearLayout>
