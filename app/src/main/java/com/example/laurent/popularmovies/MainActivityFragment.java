@@ -40,26 +40,10 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
     private static final String[] MOVIE_COLUMNS = {
             MovieContract.MovieEntry.COLUMN_ID,
-            MovieContract.MovieEntry.COLUMN_INSERT_ORDER,
-            MovieContract.MovieEntry.COLUMN_RELEASE_DATE,
             MovieContract.MovieEntry.COLUMN_IMAGE_URI,
-            MovieContract.MovieEntry.COLUMN_SYNOPSIS,
-            MovieContract.MovieEntry.COLUMN_TITLE,
-            MovieContract.MovieEntry.COLUMN_RATING,
-            MovieContract.MovieEntry.COLUMN_POPULARITY,
-            MovieContract.MovieEntry.COLUMN_IN_LIST_POPULARITY,
-            MovieContract.MovieEntry.COLUMN_IN_LIST_RATING,
     };
     static final int COL_MOVIE_ID = 0;
-    static final int COL_MOVIE_INSERT_ORDER = 1;
-    static final int COL_MOVIE_RELEASE_DATE = 2;
-    static final int COL_MOVIE_IMAGE_URI = 3;
-    static final int COL_MOVIE_SYNOPSIS = 4;
-    static final int COL_MOVIE_TITLE = 5;
-    static final int COL_MOVIE_RATING = 6;
-    static final int COL_MOVIE_POPULARITY = 7;
-    static final int COL_MOVIE_IN_LIST_POPULARITY = 8;
-    static final int COL_MOVIE_IN_LIST_RATING = 9;
+    static final int COL_MOVIE_IMAGE_URI = 1;
 
 
     @Override
@@ -153,7 +137,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
     @Override
     public android.support.v4.content.Loader<Cursor> onCreateLoader(int id, Bundle args) {
         Uri moviesUri = MovieContract.MovieEntry.buildMoviesUri();
-        String sortBy = null;
+        String sortBy;
         String selection;
 
         Log.d(LOG_TAG, "onCreateLoader");
@@ -175,12 +159,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             selection = MovieContract.MovieEntry.COLUMN_IN_LIST_POPULARITY + " = 1";
         }
 
-
-        if (sortBy == null) {
-            sortBy = MovieContract.MovieEntry.COLUMN_INSERT_ORDER + " ASC";
-        } else {
-            sortBy += ", " + MovieContract.MovieEntry.COLUMN_INSERT_ORDER + " ASC";
-        }
+        sortBy = MovieContract.MovieEntry.COLUMN_INSERT_ORDER + " ASC";
 
         return new CursorLoader(
                 getContext(),
@@ -212,7 +191,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
 
     private class infiniteOnScrollListener implements AbsListView.OnScrollListener {
         // Good resource: https://github.com/codepath/android_guides/wiki/Endless-Scrolling-with-AdapterViews
-
         // If we have less items than the number we want in buffer, we need to fetch more data.
         private int bufferItemCount = 4;
         private int previousTotalItemCount = 0;
@@ -228,7 +206,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         }
 
 
-        // This happens many times a second during a scroll, so be wary of the code you place here.
+        // This happens many times a second during a scroll, so we must be wary of the code placed here.
         @Override
         public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
             Log.v(LOG_TAG, String.format("firstVisibleItem: %d", firstVisibleItem));

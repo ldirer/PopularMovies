@@ -42,10 +42,6 @@ public class ImageListAdapter extends CursorAdapter {
         viewHolder.posterView.setImageURI(Uri.parse(cursor.getString(MainActivityFragment.COL_MOVIE_IMAGE_URI)));
     }
 
-    /**
-     ViewHolder pattern: we 'cache' the views so that we don't need to use findViewById on recycled
-     views (views that we've seen before). VERY verbose imho.
-     */
     private class ViewHolder {
         public SimpleDraweeView posterView;
 
