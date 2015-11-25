@@ -285,8 +285,9 @@ public class MovieProvider extends ContentProvider {
                         "WHERE " + selection;
                 Log.d(LOG_TAG, "Toggling favorite query: " + toggleQuery);
                 rowsUpdated = db.rawQuery(toggleQuery, null).getCount();
-                //TODO: How can we do this query (a workaround would be a select followed by an update) AND get the count of updated rows?
-                // TODO: remove this hack.
+                Log.d(LOG_TAG, "RowsUpdated: " + rowsUpdated);
+                // TODO: How can we do this query (a workaround would be a select followed by an update) AND get the count of updated rows?
+                // For now we'll be using this great hack.
                 rowsUpdated = 1;
                 break;
             default:

@@ -172,8 +172,8 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         mFavoriteFloatingActionButton = (FloatingActionButton) getActivity().findViewById(R.id.detail_favorite_floating_action_button);
 
         if (null == getActivity().findViewById(R.id.toolbar_image)) {
-            // TODO: move the code for setActionBar in the fragment. See how Sunshine did it.
-            // TODO: it'll prevent this boilerplate code.
+            // Mb we could move the code for setActionBar in the fragment. See how Sunshine did it.
+            // It would prevent this boilerplate code.
             mPosterView = (SimpleDraweeView) rootView.findViewById(R.id.toolbar_image);
             mCollapsingToolbarLayout = (CollapsingToolbarLayout) rootView.findViewById(R.id.collapsingToolbarLayout);
             mFavoriteFloatingActionButton = (FloatingActionButton) rootView.findViewById(R.id.detail_favorite_floating_action_button);
@@ -369,13 +369,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     }
 
 
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        // We do  not save the asynctasks, we just save the results.
-        // TODO: what if the device is rotated before the asynctask completes? NPE?
-//        outState.putParcelableArray();
-    }
-
     /**
      * Dichotomic search to find a text size that fits.
      *
@@ -458,7 +451,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         int rowsUpdated = getContext().getContentResolver().update(toggleFavoriteUri, null, null, null);
         Log.d(LOG_TAG, String.format("rows updated: %d", rowsUpdated));
 
-        // TODO: save reviews & trailers to db.
+        // Save reviews and trailers to db.
         for (int i = 0; i < mReviews.size(); i++) {
             Review review = mReviews.get(i);
             ContentValues cvReview = new ContentValues();
@@ -475,7 +468,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             Trailer trailer = mTrailers.get(i);
             ContentValues cvTrailer = new ContentValues();
             cvTrailer.put(MovieContract.TrailerEntry.COLUMN_TRAILER_NAME, trailer.name);
-            cvTrailer.put(MovieContract.TrailerEntry.COLUMN_TRAILER_URL_KEY, trailer.uri.toString());
+            cvTrailer.put(MovieContract.TrailerEntry.COLUMN_TRAILER_URL_KEY, trailer.key);
             Uri insertedTrailer = getContext().getContentResolver().insert(
                     mMovieUri.buildUpon().appendPath(MovieContract.PATH_TRAILERS).build(),
                     cvTrailer);

@@ -130,7 +130,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
                 editor.putInt(getString(R.string.pref_sort_by_key), position);
                 editor.apply();
 
-                // TODO: This is fragile: we depend on the order of the resources arrays being consistent...
+                // This is fragile: we depend on the order of the resources arrays being consistent...
                 String[] sortByValues = getResources().getStringArray(R.array.sort_by_values);
                 onSortByChanged(sortByValues[position]);
             }
@@ -147,7 +147,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
             new FetchMovieDataTask(this, sortByTmdb).execute();
         }
         getLoaderManager().restartLoader(MOVIE_LOADER, null, this);
-        //TODO: reset scroll position to the top.
     }
 
 
