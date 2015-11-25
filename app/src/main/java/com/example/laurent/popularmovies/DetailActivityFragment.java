@@ -49,9 +49,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A placeholder fragment containing a simple view.
- */
+
 public class DetailActivityFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
 
     // Fragment Tags are useful on orientation change when activity is destroyed + re-created.
@@ -171,7 +169,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         mFavoriteFloatingActionButton = (FloatingActionButton) getActivity().findViewById(R.id.detail_favorite_floating_action_button);
 
         if (null == getActivity().findViewById(R.id.toolbar_image)) {
-            // Mb we could move the code for setActionBar in the fragment. See how Sunshine did it.
+            // Maybe we could move the code for setActionBar in the fragment. See how Sunshine did it.
             // It would prevent this boilerplate code.
             mPosterView = (SimpleDraweeView) rootView.findViewById(R.id.toolbar_image);
             mCollapsingToolbarLayout = (CollapsingToolbarLayout) rootView.findViewById(R.id.collapsingToolbarLayout);
@@ -185,11 +183,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         if (mReviewsFetched) {
             updateReviewsUI(mReviews);
         }
-
-//        if(null != mTitle) {
-//            // We have the title already, we don't want to wait for onLoadFinished to resize the text.
-//            mTitleView.setTextSize(TypedValue.COMPLEX_UNIT_PX, findRightTextSize(mTitleView));
-//        }
 
         // Fixing floating action button margin for <20 api versions
         if (Build.VERSION.SDK_INT < 55) { //Build.VERSION_CODES.LOLLIPOP) {
