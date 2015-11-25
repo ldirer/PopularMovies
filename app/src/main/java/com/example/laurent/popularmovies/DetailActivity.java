@@ -8,6 +8,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 
 public class DetailActivity extends AppCompatActivity {
+    private DetailActivityFragment mFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,11 +19,11 @@ public class DetailActivity extends AppCompatActivity {
             // Create the detail fragment and add it to the activity
             // using a fragment transaction.
 
-            DetailActivityFragment fragment = new DetailActivityFragment();
-            fragment.setArguments(getIntent().getExtras());
+            mFragment = new DetailActivityFragment();
+            mFragment.setArguments(getIntent().getExtras());
 
             getSupportFragmentManager().beginTransaction()
-                    .add(R.id.fragment_detail_container, fragment, DetailActivityFragment.DETAIL_FRAGMENT_TAG)
+                    .add(R.id.fragment_detail_container, mFragment, DetailActivityFragment.DETAIL_FRAGMENT_TAG)
                     .commit();
 
             // We need to have the layout inflated before we look for ids!
@@ -55,5 +56,13 @@ public class DetailActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        // We would like not to have the trailers reloaded on every screen rotation
+        // Though it does not look straightforward using async tasks!
+        // We'd need Reviews and Trailers to implement Parcelable so we can save them in a Bundle.
     }
 }

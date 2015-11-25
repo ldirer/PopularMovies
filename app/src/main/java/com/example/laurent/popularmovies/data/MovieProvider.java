@@ -21,13 +21,8 @@ import android.content.ContentValues;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteQueryBuilder;
-import android.database.sqlite.SQLiteStatement;
-import android.graphics.Movie;
 import android.net.Uri;
-import android.os.CancellationSignal;
-import android.support.annotation.NonNull;
 import android.util.Log;
 
 public class MovieProvider extends ContentProvider {
@@ -41,12 +36,18 @@ public class MovieProvider extends ContentProvider {
     static final int MOVIES = 100;
     static final int MOVIE = 101;
     static final int TOGGLE_FAVORITE = 102;
+    static final int MOVIE_REVIEWS = 103;
+    static final int MOVIE_TRAILERS = 104;
 
-    private static final SQLiteQueryBuilder sMovieQueryBuilder;
+    private static final SQLiteQueryBuilder sMovieWithReviewsQueryBuilder;
 
     static {
-        sMovieQueryBuilder = new SQLiteQueryBuilder();
-        sMovieQueryBuilder.setTables(MovieContract.MovieEntry.TABLE_NAME);
+        sMovieWithReviewsQueryBuilder = new SQLiteQueryBuilder();
+        sMovieWithReviewsQueryBuilder.setTables(
+                MovieContract.MovieEntry.TABLE_NAME + " INNER JOIN " +
+                        MovieContract.ReviewEntry.TABLE_NAME + " ON " +
+                        MovieContract.MovieEntry.TABLE_NAME + "." + MovieContract.MovieEntry.COLUMN_ID + " = " +
+                        MovieContract.ReviewEntry.TABLE_NAME + "." + MovieContract.ReviewEntry.COLUMN_MOVIE_KEY);
     }
 
     static UriMatcher buildUriMatcher() {
@@ -63,6 +64,8 @@ public class MovieProvider extends ContentProvider {
         matcher.addURI(authority, MovieContract.PATH_MOVIES, MOVIES);
         matcher.addURI(authority, MovieContract.PATH_MOVIES + "/*", MOVIE);
         matcher.addURI(authority, MovieContract.PATH_MOVIES + "/*/toggle_favorite", TOGGLE_FAVORITE);
+        matcher.addURI(authority, MovieContract.PATH_MOVIES + "/*/reviews", MOVIE_REVIEWS);
+        matcher.addURI(authority, MovieContract.PATH_MOVIES + "/*/trailers", MOVIE_TRAILERS);
         return matcher;
     }
 
@@ -88,7 +91,6 @@ public class MovieProvider extends ContentProvider {
         final int match = sUriMatcher.match(uri);
 
         switch (match) {
-            // Student: Uncomment and fill out these two cases
             case MOVIES:
                 return MovieContract.MovieEntry.CONTENT_TYPE;
             case MOVIE:
@@ -107,7 +109,17 @@ public class MovieProvider extends ContentProvider {
         // and query the database accordingly.
         Cursor retCursor;
         switch (sUriMatcher.match(uri)) {
-            // "weather/*/*"
+            case MOVIE_REVIEWS: {
+                retCursor = sMovieWithReviewsQueryBuilder.query(
+                        mOpenHelper.getReadableDatabase(),
+                        projection,
+                        getSelectionWithIdFromUri(uri, selection),
+                        selectionArgs,
+                        null,
+                        null,
+                        sortOrder);
+                break;
+            }
             case MOVIES: {
                 retCursor = mOpenHelper.getReadableDatabase().query(
                         MovieContract.MovieEntry.TABLE_NAME,
@@ -147,6 +159,13 @@ public class MovieProvider extends ContentProvider {
         Uri returnUri;
 
         switch (match) {
+            case MOVIE_REVIEWS: {
+                long movieId = MovieContract.MovieEntry.getIdFromUri(uri);
+                values.put(MovieContract.ReviewEntry.COLUMN_MOVIE_KEY, movieId);
+                long _id = db.insert(MovieContract.ReviewEntry.TABLE_NAME, null, values);
+                returnUri = MovieContract.ReviewEntry.buildReviewUri(_id);
+                break;
+            }
             case MOVIES: {
                 // I wanted to use the following, but the behavior about the returned id does not seem to match the documented one.
                 // https://code.google.com/p/android/issues/detail?id=13045
@@ -156,8 +175,10 @@ public class MovieProvider extends ContentProvider {
                 // We first try to select a record with the given id. If it exists we don't do anything, otherwise we insert.
                 // Basically doing db.insertWithOnConflict with CONFLICT_IGNORE should do.
                 long _id;
-                Cursor c = db.query(MovieContract.MovieEntry.TABLE_NAME, new String[]{MovieContract.MovieEntry.COLUMN_ID},
-                        MovieContract.MovieEntry.COLUMN_ID + " = " + values.getAsString(MovieContract.MovieEntry.COLUMN_ID), null, null, null, null);
+                Cursor c = db.query(MovieContract.MovieEntry.TABLE_NAME,
+                        new String[]{MovieContract.MovieEntry.COLUMN_ID},
+                        MovieContract.MovieEntry.COLUMN_ID + " = " + values.getAsString(MovieContract.MovieEntry.COLUMN_ID),
+                        null, null, null, null);
                 if (c.moveToFirst()) {
                     assert c.getCount() == 1;
                     _id = c.getLong(0);

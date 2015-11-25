@@ -29,6 +29,7 @@
 
 </string>
     <string name="content_description_detail_trailer_play_icon">Play video on youtube</string>
+    <string name="reviews_empty">No review for this movie.</string>
 
 
 </resources>

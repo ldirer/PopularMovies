@@ -6,6 +6,8 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 import static com.example.laurent.popularmovies.data.MovieContract.MovieEntry;
+import static com.example.laurent.popularmovies.data.MovieContract.ReviewEntry;
+import static com.example.laurent.popularmovies.data.MovieContract.TrailerEntry;
 
 public class MovieDbHelper extends SQLiteOpenHelper {
 
@@ -36,15 +38,38 @@ public class MovieDbHelper extends SQLiteOpenHelper {
                 MovieEntry.COLUMN_IS_FAVORITE + " INTEGER DEFAULT 0" +
                 ");";
 
+        final String createReviewsTable = "CREATE TABLE " + ReviewEntry.TABLE_NAME + "(" +
+                ReviewEntry.COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                ReviewEntry.COLUMN_REVIEW_AUTHOR + " TEXT, " +
+                ReviewEntry.COLUMN_REVIEW_BODY + " TEXT, " +
+                ReviewEntry.COLUMN_MOVIE_KEY + " INTEGER NON NULL, " +
+                " FOREIGN KEY (" + ReviewEntry.COLUMN_MOVIE_KEY + ") REFERENCES " +
+                MovieEntry.TABLE_NAME + " (" + MovieEntry.COLUMN_ID + ")"
+                + ");";
+
+
+        final String createTrailersTable = "CREATE TABLE " + TrailerEntry.TABLE_NAME + "(" +
+                TrailerEntry.COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                TrailerEntry.COLUMN_TRAILER_NAME + " TEXT, " +
+                TrailerEntry.COLUMN_TRAILER_URL + " TEXT, " +
+                TrailerEntry.COLUMN_MOVIE_KEY + " INTEGER NON NULL, " +
+                " FOREIGN KEY (" + TrailerEntry.COLUMN_MOVIE_KEY + ") REFERENCES " +
+                MovieEntry.TABLE_NAME + " (" + MovieEntry.COLUMN_ID + ")"
+                + ");";
         Log.v(LOG_TAG, createMovieTable);
+        Log.v(LOG_TAG, createReviewsTable);
+        Log.v(LOG_TAG, createTrailersTable);
 
         db.execSQL(createMovieTable);
+        db.execSQL(createReviewsTable);
+//        db.execSQL(createTrailersTable);
     }
 
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("DROP TABLE IF EXISTS " + MovieEntry.TABLE_NAME + ";");
+        db.execSQL("DROP TABLE IF EXISTS " + MovieEntry.TABLE_NAME + ", " + ReviewEntry.TABLE_NAME +
+                ", " + TrailerEntry.TABLE_NAME + ";");
         onCreate(db);
     }
 }

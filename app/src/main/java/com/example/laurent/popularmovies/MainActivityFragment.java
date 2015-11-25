@@ -81,7 +81,6 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         mProgress = (ProgressBar) rootView.findViewById(R.id.main_progressbar);
 
         mImageListAdapter = new ImageListAdapter(getActivity(), null, 0);
-        // The task populates the adapter with image urls.
         gridView.setAdapter(mImageListAdapter);
         gridView.setOnItemClickListener((AdapterView.OnItemClickListener) getActivity());
 
@@ -90,6 +89,7 @@ public class MainActivityFragment extends Fragment implements LoaderManager.Load
         // Scrolling triggers data fetching.
         gridView.scrollTo(0, 0);
 
+        // The task populates the adapter with image urls.
         new FetchMovieDataTask(this).execute();
         return rootView;
     }

@@ -1,5 +1,7 @@
 package com.example.laurent.popularmovies;
 
+import android.content.ContentProvider;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -51,6 +53,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -74,7 +77,6 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     private TextView mRatingView;
     private RatingBar mRatingBarView;
     private TextView mTitleView;
-    private TextView mReleaseDateView;
     private TextView mSynopsysView;
     private SimpleDraweeView mPosterView;
     private FloatingActionButton mFavoriteFloatingActionButton;
@@ -84,6 +86,11 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     private TextView mTrailerLinearLayoutEmpty;
     private CollapsingToolbarLayout mCollapsingToolbarLayout;
     private int mIsFavorite;
+
+    private List<Review> mReviews = null;
+    private List<Trailer> mTrailers = null;
+    private boolean mTrailersFetched;
+    private boolean mReviewsFetched;
 
     private final static String[] DETAIL_COLUMNS = {
             MovieContract.MovieEntry.COLUMN_IMAGE_URI,
@@ -98,6 +105,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     };
 
 
+
     private static final int COL_MOVIE_IMAGE_URI = 0;
     private static final int COL_MOVIE_IS_FAVORITE = 1;
     private static final int COL_MOVIE_RATING = 2;
@@ -105,10 +113,29 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     private static final int COL_MOVIE_SYNOPSIS = 4;
     private static final int COL_MOVIE_TITLE = 5;
     private static final int COL_MOVIE_IMAGE_BACKDROP_URI = 6;
-    private FetchReviewsDataTask mFetchReviewsDataTask;
-    private FetchTrailersDataTask mFetchTrailersDataTask;
+    private FetchReviewsDataTask mFetchReviewsDataTask = null;
+    private FetchTrailersDataTask mFetchTrailersDataTask = null;
 //    private static final int COL_MOVIE_POPULARITY = 5;
 //    private static final int COL_MOVIE_INSERT_ORDER = 6;
+
+
+
+    private static final String[] REVIEWS_COLUMNS = {
+            MovieContract.ReviewEntry.COLUMN_REVIEW_BODY,
+            MovieContract.ReviewEntry.COLUMN_REVIEW_AUTHOR,
+    };
+
+    private static final int COL_REVIEW_BODY = 0;
+    private static final int COL_REVIEW_AUTHOR = 1;
+
+
+    private static final String[] TRAILERS_COLUMNS = {
+            MovieContract.TrailerEntry.COLUMN_TRAILER_NAME,
+            MovieContract.TrailerEntry.COLUMN_TRAILER_URL,
+    };
+
+    private static final int COL_TRAILER_NAME = 0;
+    private static final int COL_TRAILER_URL = 1;
 
     public DetailActivityFragment() {
         setHasOptionsMenu(true);
@@ -118,11 +145,8 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         getLoaderManager().initLoader(DETAIL_LOADER, null, this);
-        // This prevents the AsyncTask from using detached fragments (NPE).
+        // This prevents the AsyncTask from using detached fragments (avoids some NPE).
         setRetainInstance(true);
-    }
-
-    private void initInstances() {
     }
 
     @Override
@@ -133,21 +157,17 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 
         View rootView = inflater.inflate(R.layout.fragment_detail, container, false);
 
-
-        if (arguments != null) {
-            mId = arguments.getInt(MainActivity.DETAIL_EXTRAS_ID);
-            Bundle extras = new Bundle();
-            extras.putInt(MainActivity.DETAIL_EXTRAS_ID, mId);
-            // Fetching task populates the linear layouts.
-            mFetchReviewsDataTask = (FetchReviewsDataTask) new FetchReviewsDataTask(extras).execute();
-            mFetchTrailersDataTask = (FetchTrailersDataTask) new FetchTrailersDataTask(extras).execute();
+        if (arguments == null) {
+            return inflater.inflate(R.layout.fragment_detail_placeholder, container, false);
         }
+
+
+        mId = arguments.getInt(MainActivity.DETAIL_EXTRAS_ID);
+
         mRatingView = (TextView) rootView.findViewById(R.id.detail_rating);
         mRatingBarView = (RatingBar) rootView.findViewById(R.id.detail_rating_bar);
         mTitleView = (TextView) rootView.findViewById(R.id.detail_title);
-//            release_date_view = ((TextView) rootView.findViewById(R.id.detail_release_date));
         mSynopsysView = ((TextView) rootView.findViewById(R.id.detail_synopsis));
-//        mPosterView = (SimpleDraweeView) rootView.findViewById(R.id.detail_poster);
         mReviewLinearLayout = (LinearLayout)rootView.findViewById(R.id.detail_reviews);
         mReviewLinearLayoutEmpty = (TextView)rootView.findViewById(R.id.detail_reviews_empty);
         mTrailerLinearLayout = (LinearLayout)rootView.findViewById(R.id.detail_trailers);
@@ -167,6 +187,17 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             mShareFloatingActionButton = (FloatingActionButton) rootView.findViewById(R.id.action_share);
         }
 
+        if(mTrailersFetched) {
+            updateTrailersUI(mTrailers);
+        }
+        if(mReviewsFetched) {
+            updateReviewsUI(mReviews);
+        }
+
+        if(null != mTitle) {
+            // We have the title already, we don't want to wait for onLoadFinished to resize the text.
+            mTitleView.setTextSize(TypedValue.COMPLEX_UNIT_PX, findRightTextSize(mTitleView));
+        }
 
         // Fixing floating action button margin for <20 api versions
         if (Build.VERSION.SDK_INT < 55) { //Build.VERSION_CODES.LOLLIPOP) {
@@ -185,6 +216,45 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 
         return rootView;
     }
+
+
+    public void updateReviewsUI(List<Review> reviews) {
+        for (Review review:reviews) {
+            addReviewToLinearLayout(mReviewLinearLayout, review);
+        }
+        if (reviews.size() == 0) {
+            mReviewLinearLayout.setVisibility(View.GONE);
+            mReviewLinearLayoutEmpty.setVisibility(View.VISIBLE);
+        }
+    }
+
+    public void updateTrailersUI(List<Trailer> trailers) {
+        if (trailers.size() == 0) {
+            mTrailerLinearLayout.setVisibility(View.GONE);
+            mTrailerLinearLayoutEmpty.setVisibility(View.VISIBLE);
+            // Here we're not sure that mTitle is not null... But we can hope for the best!
+            mTrailerLinearLayoutEmpty.setText(Html.fromHtml(getString(R.string.trailer_list_empty, mTitle)));
+            mTrailerLinearLayoutEmpty.setMovementMethod(LinkMovementMethod.getInstance());
+        }
+        else {
+            for (Trailer trailer:trailers) {
+                addTrailerToLinearLayout(mTrailerLinearLayout, trailer);
+            }
+            final Intent shareIntent = getShareIntent(trailers.get(0).uri);
+            if (null == mShareMenuItem) {
+                mShareFloatingActionButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        startActivity(shareIntent);
+                    }
+                });
+            }
+            else {
+                mShareMenuItem.setIntent(shareIntent);
+            }
+        }
+    }
+
 
     public Void addReviewToLinearLayout(LinearLayout parent, Review review) {
         Log.d(LOG_TAG, "in addReviewToLinearLayout");
@@ -259,6 +329,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
             // Using a 5-star rating with ratings from tmdb on a 0-10 scale.
             mRatingBarView.setRating((float) data.getDouble(COL_MOVIE_RATING) / 2);
             mTitle = data.getString(COL_MOVIE_TITLE);
+            mTitle += " (" + getYearFromDate(data.getString(COL_MOVIE_RELEASE_DATE)) + ")";
             if (null != mCollapsingToolbarLayout) {
                 mCollapsingToolbarLayout.setTitle(mTitle);
             }
@@ -266,12 +337,22 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
                 mTitleView.setText(mTitle);
                 mTitleView.setTextSize(TypedValue.COMPLEX_UNIT_PX, findRightTextSize(mTitleView));
             }
-//            release_date_view.setText(getYearFromDate(data.getString(COL_MOVIE_RELEASE_DATE)));
+
             mSynopsysView.setText(data.getString(COL_MOVIE_SYNOPSIS));
             mPosterView.setImageURI(Uri.parse(data.getString(COL_MOVIE_IMAGE_BACKDROP_URI)));
 
             Log.d(LOG_TAG, String.format("movie is favorite value: %d", data.getInt(COL_MOVIE_IS_FAVORITE)));
             mIsFavorite = data.getInt(COL_MOVIE_IS_FAVORITE);
+
+            if(null == mFetchReviewsDataTask || null == mFetchTrailersDataTask) {
+                Bundle extras = new Bundle();
+                extras.putInt(MainActivity.DETAIL_EXTRAS_ID, mId);
+                // Fetching task populates the linear layouts.
+                // We do this here because we want to know if the movie is a favorite to fetch from db or network.
+                mFetchReviewsDataTask = (FetchReviewsDataTask) new FetchReviewsDataTask(extras).execute();
+                mFetchTrailersDataTask = (FetchTrailersDataTask) new FetchTrailersDataTask(extras).execute();
+            }
+
             if (mIsFavorite == 0) {
                 mFavoriteFloatingActionButton.setImageDrawable(ContextCompat.getDrawable(getContext(), android.R.drawable.star_off));
             } else {
@@ -292,6 +373,14 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         if (null != mFetchTrailersDataTask) {
             mFetchTrailersDataTask.cancel(true);
         }
+    }
+
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        // We do  not save the asynctasks, we just save the results.
+        // TODO: what if the device is rotated before the asynctask completes? NPE?
+//        outState.putParcelableArray();
     }
 
     /**
@@ -369,8 +458,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         String snackbarText = null;
         if (mIsFavorite == 0) {
             snackbarText = "Movie marked as favorite!";
-        }
-        else {
+        } else {
             snackbarText = "Movie removed from favorites!";
         }
 
@@ -380,13 +468,36 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         int rowsUpdated = getContext().getContentResolver().update(toggleFavoriteUri, null, null, null);
         Log.d(LOG_TAG, String.format("rows updated: %d", rowsUpdated));
 
+        // TODO: save reviews & trailers to db.
+
+        for (int i = 0; i < mReviews.size(); i++) {
+            Review review = mReviews.get(i);
+            ContentValues cvReview = new ContentValues();
+            cvReview.put(MovieContract.ReviewEntry.COLUMN_REVIEW_AUTHOR, review.author);
+            cvReview.put(MovieContract.ReviewEntry.COLUMN_REVIEW_BODY, review.body);
+            Uri insertedReview = getContext().getContentResolver().insert(
+                    mMovieUri.buildUpon().appendPath(MovieContract.PATH_REVIEWS).build(),
+                    cvReview);
+            Log.d(LOG_TAG, "inserted review at uri:" + insertedReview.toString());
+        }
+
+
+//        for (int i = 0; i < mReviews.size(); i++) {
+//            Review review = mReviews.get(i);
+//            ContentValues cvReview = new ContentValues();
+//            cvReview.put(MovieContract.ReviewEntry.COLUMN_REVIEW_AUTHOR, review.author);
+//            cvReview.put(MovieContract.ReviewEntry.COLUMN_REVIEW_BODY, review.body);
+//            Uri insertedReview = getContext().getContentResolver().insert(
+//                    mMovieUri.buildUpon().appendPath(MovieContract.PATH_REVIEWS).build(),
+//                    cvReview);
+//            Log.d(LOG_TAG, "inserted review at uri:" + insertedReview.toString());
+//        }
     }
 
     @Override
     public void onScrollChanged() {
 
     }
-
 
     public class FetchTrailersDataTask extends AsyncTask<Void, Void, List<Trailer>>{
 
@@ -472,60 +583,69 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         @Override
         protected void onPostExecute(List<Trailer> result) {
             super.onPostExecute(result);
+            mTrailersFetched = true;
             if (result != null) {
+                mTrailers = result;
                 Log.d(LOG_TAG, String.format("Number of trailers fetched: %s",
                         Integer.toString(result.size())));
-
-                if (result.size() == 0) {
-                    mTrailerLinearLayout.setVisibility(View.GONE);
-                    mTrailerLinearLayoutEmpty.setVisibility(View.VISIBLE);
-                    // Here we're not sure that mTitle is not null... But we can hope for the best!
-                    mTrailerLinearLayoutEmpty.setText(Html.fromHtml(getString(R.string.trailer_list_empty, mTitle)));
-                    mTrailerLinearLayoutEmpty.setMovementMethod(LinkMovementMethod.getInstance());
-                }
-                else {
-                    for (Trailer trailer:result) {
-                        addTrailerToLinearLayout(mTrailerLinearLayout, trailer);
-                    }
-                    final Intent shareIntent = getShareIntent(result.get(0).uri);
-                    if (null == mShareMenuItem) {
-                        mShareFloatingActionButton.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                startActivity(shareIntent);
-                            }
-                        });
-                    }
-                    else {
-                        mShareMenuItem.setIntent(shareIntent);
-                    }
-                }
+                updateTrailersUI(mTrailers);
             }
             }
     }
 
     public class FetchReviewsDataTask extends AsyncTask<Void, Void, List<Review>> {
-        private String baseUri;
+        private String baseUriStr;
+        private Uri baseProviderUri;
         private String LOG_TAG = FetchReviewsDataTask.class.getSimpleName();
 
         public FetchReviewsDataTask(Bundle bundle) {
             super();
             long _id = bundle.getInt(MainActivity.DETAIL_EXTRAS_ID);
-            this.baseUri = String.format("https://api.themoviedb.org/3/movie/%d/reviews", _id);
+            this.baseUriStr = String.format("https://api.themoviedb.org/3/movie/%d/reviews", _id);
+            baseProviderUri = MovieContract.MovieEntry.buildMovieUri(_id);
         }
 
 
         @Override
         protected List<Review> doInBackground(Void... params) {
-
 //            publishProgress(0);
 
-            Uri reviewsUri = Uri.parse(baseUri).buildUpon()
+            Uri reviewsUri = Uri.parse(baseUriStr).buildUpon()
                     .appendQueryParameter("api_key", MainActivity.API_KEY)
                     .build();
 
             Log.d(LOG_TAG, reviewsUri.toString());
+            List<Review> reviews;
+            if (mIsFavorite == 1) {
+                Log.d(LOG_TAG, "Using database to fetch favorite details...");
+                reviews = new ArrayList<Review>();
+                Uri reviewsProviderUri = baseProviderUri.buildUpon().appendPath("reviews")
+                        .build();
+                Cursor reviewsCursor = getContext().getContentResolver().query(reviewsProviderUri, REVIEWS_COLUMNS, null,
+                        null, null);
 
+                if (reviewsCursor.moveToFirst()) {
+                    do{
+                        String reviewAuthor = reviewsCursor.getString(COL_REVIEW_AUTHOR);
+                        String reviewBody = reviewsCursor.getString(COL_REVIEW_BODY);
+                        reviews.add(new Review(reviewAuthor, reviewBody));
+                    }while(reviewsCursor.moveToNext());
+                }
+                else{
+                    Log.d(LOG_TAG, "No reviews found in DB!");
+                }
+                reviewsCursor.close();
+                }
+            else {
+                reviews = getReviewsFromNetwork(reviewsUri);
+            }
+            return reviews;
+        }
+
+
+        protected List<Review> getReviewsFromNetwork(Uri reviewsUri) {
+            Log.d(LOG_TAG, "in getReviewsFromNetwork");
+            Log.d(LOG_TAG, "in getReviewsFromNetwork with mIsFavorite=" + mIsFavorite);
             List<Review> reviews = null;
             String reviewsJsonStr = null;
             HttpURLConnection urlConnection = null;
@@ -562,25 +682,22 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
                     urlConnection.disconnect();
                 }
             }
-            // Our progress bar is a spinning wheel, we just need to tell it when we're done.
-//            publishProgress(100);
             return reviews;
         }
+
 
         @Override
         protected void onPostExecute(List<Review> result) {
             super.onPostExecute(result);
+            mReviewsFetched = true;
             if (result != null) {
+                mReviews = result;
                 Log.d(LOG_TAG, String.format("Number of reviews fetched: %s", result.size()));
-                for (Review review:result) {
-                    addReviewToLinearLayout(mReviewLinearLayout, review);
-                }
-                if (result.size() == 0) {
-                    mReviewLinearLayout.setVisibility(View.GONE);
-                    mReviewLinearLayoutEmpty.setVisibility(View.VISIBLE);
-                }
+                updateReviewsUI(mReviews);
             }
         }
+
+
 
         private List<Review> getReviewDataFromJson(String reviewsJsonStr) throws JSONException {
             final String TMDB_REVIEWS_LIST = "results";
