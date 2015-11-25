@@ -360,6 +360,7 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
 
     /**
      * The dates we get from the movie database are formatted as yyyy-mm-dd.
+     * This helper method just returns the year (yyyy).
      *
      * @param string
      * @return

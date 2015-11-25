@@ -1,8 +1,7 @@
 package com.example.laurent.popularmovies;
 
-import android.support.design.widget.CollapsingToolbarLayout;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -30,7 +29,6 @@ public class DetailActivity extends AppCompatActivity {
             // This toolbar code is dangerous in fragment since the ActionBar is an activity property, and an activity could have several fragments.
             Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
             setSupportActionBar(toolbar);
-//            getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         }
     }

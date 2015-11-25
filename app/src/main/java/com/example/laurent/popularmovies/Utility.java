@@ -21,20 +21,21 @@ public class Utility {
 
     /**
      * Dichotomic search to find a text size that fits.
+     * Adapted from:
+      http://stackoverflow.com/questions/2617266/how-to-adjust-text-font-size-to-fit-textview
      *
      * @param fragment
      * @param view
      * @return A text size that works (in pixels).
      */
     static float findRightTextSize(Fragment fragment, TextView view) {
-        // http://stackoverflow.com/questions/2617266/how-to-adjust-text-font-size-to-fit-textview
         String text = (String) view.getText();
         int textWidth = view.getWidth();
         int targetWidth = textWidth - view.getPaddingLeft() - view.getPaddingRight();
-        // We don't want to use view.getTextSize() because repeated calls will gradually shrink the text!!
-//        float hi = view.getTextSize();
+        // We don't want to use view.getTextSize() because repeated calls would gradually shrink the text!
+        // float hi = view.getTextSize();
 
-//      Get view height in dp:  http://stackoverflow.com/questions/4605527/converting-pixels-to-dp
+        // Get view height in dp:  http://stackoverflow.com/questions/4605527/converting-pixels-to-dp
         DisplayMetrics metrics = fragment.getResources().getDisplayMetrics();
         float dpHeight = view.getHeight() / (metrics.densityDpi / 160f);
         // We take the max so that the text fits on one line and does not overflow vertically.

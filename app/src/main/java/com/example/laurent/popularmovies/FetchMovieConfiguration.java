@@ -15,7 +15,7 @@ import java.net.URL;
 
 /**
  * Get the configuration information from the TMDB api.
- * Turns out we mostly need the base image URI to be able to fetch posters.
+ * Turns out we almost only need the base image URI to be able to fetch posters.
  */
 public class FetchMovieConfiguration {
 
