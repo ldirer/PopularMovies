@@ -1,6 +1,9 @@
 Popular Movies
 ==============
 
+This app uses data from The Movie Database (TMDb) but is not endorsed by TMDb.
+
+
 ## Building the project with your API Key
 Data displayed in the app is courtesy of the Movie Database.
 To build the project with your api key, include a file `app.properties` file at the same level as the
