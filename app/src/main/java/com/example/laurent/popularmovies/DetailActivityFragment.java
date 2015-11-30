@@ -172,6 +172,10 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     }
 
 
+    /**
+     * Update the reviews UI by populating a linear layout with a list of the reviews.
+     * @param reviews
+     */
     public void updateReviewsUI(List<Review> reviews) {
         for (Review review : reviews) {
             addReviewToLinearLayout(mReviewLinearLayout, review);
@@ -182,6 +186,11 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
         }
     }
 
+
+    /**
+     * Update the trailers UI by populating a linear layout with a list of the trailers.
+     * @param trailers
+     */
     public void updateTrailersUI(List<Trailer> trailers) {
         if (trailers.size() == 0) {
             mTrailerLinearLayout.setVisibility(View.GONE);
