@@ -5,7 +5,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.CollapsingToolbarLayout;
@@ -34,17 +33,6 @@ import android.widget.TextView;
 import com.example.laurent.popularmovies.data.MovieContract;
 import com.facebook.drawee.view.SimpleDraweeView;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -75,14 +63,14 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     private TextView mReviewLinearLayoutEmpty;
     private TextView mTrailerLinearLayoutEmpty;
     private CollapsingToolbarLayout mCollapsingToolbarLayout;
-    private int mIsFavorite;
+    public int mIsFavorite;
 
-    private List<Review> mReviews = null;
-    private List<Trailer> mTrailers = null;
-    private boolean mTrailersFetched;
-    private boolean mReviewsFetched;
+    public List<Review> mReviews = null;
+    public List<Trailer> mTrailers = null;
+    public boolean mTrailersFetched;
+    public boolean mReviewsFetched;
 
-    private final static String[] DETAIL_COLUMNS = {
+    public final static String[] DETAIL_COLUMNS = {
             MovieContract.MovieEntry.COLUMN_IMAGE_URI,
             MovieContract.MovieEntry.COLUMN_IS_FAVORITE,
             MovieContract.MovieEntry.COLUMN_RATING,
@@ -95,35 +83,18 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     };
 
 
-    private static final int COL_MOVIE_IMAGE_URI = 0;
-    private static final int COL_MOVIE_IS_FAVORITE = 1;
-    private static final int COL_MOVIE_RATING = 2;
-    private static final int COL_MOVIE_RELEASE_DATE = 3;
-    private static final int COL_MOVIE_SYNOPSIS = 4;
-    private static final int COL_MOVIE_TITLE = 5;
-    private static final int COL_MOVIE_IMAGE_BACKDROP_URI = 6;
+    public static final int COL_MOVIE_IMAGE_URI = 0;
+    public static final int COL_MOVIE_IS_FAVORITE = 1;
+    public static final int COL_MOVIE_RATING = 2;
+    public static final int COL_MOVIE_RELEASE_DATE = 3;
+    public static final int COL_MOVIE_SYNOPSIS = 4;
+    public static final int COL_MOVIE_TITLE = 5;
+    public static final int COL_MOVIE_IMAGE_BACKDROP_URI = 6;
     private FetchReviewsDataTask mFetchReviewsDataTask = null;
     private FetchTrailersDataTask mFetchTrailersDataTask = null;
 //    private static final int COL_MOVIE_POPULARITY = 5;
 //    private static final int COL_MOVIE_INSERT_ORDER = 6;
 
-
-    private static final String[] REVIEWS_COLUMNS = {
-            MovieContract.ReviewEntry.COLUMN_REVIEW_BODY,
-            MovieContract.ReviewEntry.COLUMN_REVIEW_AUTHOR,
-    };
-
-    private static final int COL_REVIEW_BODY = 0;
-    private static final int COL_REVIEW_AUTHOR = 1;
-
-
-    private static final String[] TRAILERS_COLUMNS = {
-            MovieContract.TrailerEntry.COLUMN_TRAILER_NAME,
-            MovieContract.TrailerEntry.COLUMN_TRAILER_URL_KEY,
-    };
-
-    private static final int COL_TRAILER_NAME = 0;
-    private static final int COL_TRAILER_URL_KEY = 1;
 
     public DetailActivityFragment() {
         setHasOptionsMenu(true);
@@ -331,8 +302,8 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
                 extras.putInt(MainActivity.DETAIL_EXTRAS_ID, mId);
                 // Fetching task populates the linear layouts.
                 // We do this here because we want to know if the movie is a favorite to fetch from db or network.
-                mFetchReviewsDataTask = (FetchReviewsDataTask) new FetchReviewsDataTask(extras).execute();
-                mFetchTrailersDataTask = (FetchTrailersDataTask) new FetchTrailersDataTask(extras).execute();
+                mFetchReviewsDataTask = (FetchReviewsDataTask) new FetchReviewsDataTask(this, extras).execute();
+                mFetchTrailersDataTask = (FetchTrailersDataTask) new FetchTrailersDataTask(this, extras).execute();
             }
 
             if (mIsFavorite == 0) {
@@ -427,257 +398,5 @@ public class DetailActivityFragment extends Fragment implements LoaderManager.Lo
     }
 
 
-    public class FetchTrailersDataTask extends AsyncTask<Void, Void, List<Trailer>> {
-
-        private String baseUri;
-        private Uri baseProviderUri;
-        private String LOG_TAG = FetchTrailersDataTask.class.getSimpleName();
-
-        public FetchTrailersDataTask(Bundle extras) {
-            super();
-            Integer movieId = extras.getInt(MainActivity.DETAIL_EXTRAS_ID);
-            this.baseUri = String.format("https://api.themoviedb.org/3/movie/%d/videos", movieId);
-            baseProviderUri = MovieContract.MovieEntry.buildMovieUri(movieId);
-        }
-
-        public List<Trailer> FetchTrailersFromNetwork(Uri trailersUri) {
-            List<Trailer> trailers = null;
-            String trailersJsonStr;
-            HttpURLConnection urlConnection = null;
-            BufferedReader reader;
-            try {
-                URL url = new URL(trailersUri.toString());
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-
-                InputStream inputStream = urlConnection.getInputStream();
-                StringBuffer buffer = new StringBuffer();
-
-                reader = new BufferedReader(new InputStreamReader(inputStream));
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                    // But it does make debugging a *lot* easier if you print out the completed
-                    // buffer for debugging.
-                    buffer.append(line).append("\n");
-                }
-
-                if (buffer.length() == 0) {
-                    // Stream was empty.  No point in parsing.
-                    return null;
-                }
-                trailersJsonStr = buffer.toString();
-                trailers = getTrailerDataFromJson(trailersJsonStr);
-
-            } catch (IOException | JSONException e) {
-                Log.e(LOG_TAG, "Error on my side.");
-                e.printStackTrace();
-            } finally {
-                if (urlConnection != null) {
-                    urlConnection.disconnect();
-                }
-            }
-            return trailers;
-        }
-
-        @Override
-        protected List<Trailer> doInBackground(Void... params) {
-            Uri trailersUri = Uri.parse(baseUri).buildUpon()
-                    .appendQueryParameter("api_key", MainActivity.API_KEY)
-                    .build();
-
-            Log.d(LOG_TAG, trailersUri.toString());
-            List<Trailer> trailers = null;
-            if (mIsFavorite == 1) {
-                Log.d(LOG_TAG, "Using database to fetch favorite trailers...");
-                trailers = new ArrayList<Trailer>();
-                Uri trailersProviderUri = baseProviderUri.buildUpon().appendPath(MovieContract.PATH_TRAILERS)
-                        .build();
-                Cursor trailersCursor = getContext().getContentResolver().query(trailersProviderUri, TRAILERS_COLUMNS, null,
-                        null, null);
-
-                if (trailersCursor.moveToFirst()) {
-                    do {
-                        String trailerName = trailersCursor.getString(COL_TRAILER_NAME);
-                        String trailerKey = trailersCursor.getString(COL_TRAILER_URL_KEY);
-                        trailers.add(new Trailer(trailerName, trailerKey));
-                    } while (trailersCursor.moveToNext());
-                } else {
-                    Log.d(LOG_TAG, "No trailers found in DB!");
-                }
-                trailersCursor.close();
-            }
-            else {
-                trailers = FetchTrailersFromNetwork(trailersUri);
-            }
-            return trailers;
-
-        }
-
-        private List<Trailer> getTrailerDataFromJson(String trailersJsonStr) throws JSONException {
-            final String TMDB_TRAILERS_LIST = "results";
-            final String TMDB_TRAILER_NAME = "name";
-            final String TMDB_TRAILER_KEY = "key";
-
-            JSONObject trailersJson = new JSONObject(trailersJsonStr);
-            JSONArray trailersArray = trailersJson.getJSONArray(TMDB_TRAILERS_LIST);
-
-
-            List<Trailer> trailerList = new ArrayList<>();
-
-            for (int i = 0; i < trailersArray.length(); i++) {
-                JSONObject trailerJson = trailersArray.getJSONObject(i);
-                String name = trailerJson.getString(TMDB_TRAILER_NAME);
-                String key = trailerJson.getString(TMDB_TRAILER_KEY);
-
-                Trailer trailer = new Trailer(name, key);
-                trailerList.add(trailer);
-            }
-            return trailerList;
-        }
-
-
-        @Override
-        protected void onPostExecute(List<Trailer> result) {
-            super.onPostExecute(result);
-            mTrailersFetched = true;
-            if (result != null) {
-                mTrailers = result;
-                Log.d(LOG_TAG, String.format("Number of trailers fetched: %s",
-                        Integer.toString(result.size())));
-                updateTrailersUI(mTrailers);
-            }
-        }
-    }
-
-    public class FetchReviewsDataTask extends AsyncTask<Void, Void, List<Review>> {
-        private String baseUriStr;
-        private Uri baseProviderUri;
-        private String LOG_TAG = FetchReviewsDataTask.class.getSimpleName();
-
-        public FetchReviewsDataTask(Bundle bundle) {
-            super();
-            long _id = bundle.getInt(MainActivity.DETAIL_EXTRAS_ID);
-            this.baseUriStr = String.format("https://api.themoviedb.org/3/movie/%d/reviews", _id);
-            baseProviderUri = MovieContract.MovieEntry.buildMovieUri(_id);
-        }
-
-
-        @Override
-        protected List<Review> doInBackground(Void... params) {
-//            publishProgress(0);
-
-            Uri reviewsUri = Uri.parse(baseUriStr).buildUpon()
-                    .appendQueryParameter("api_key", MainActivity.API_KEY)
-                    .build();
-
-            Log.d(LOG_TAG, reviewsUri.toString());
-            List<Review> reviews;
-            if (mIsFavorite == 1) {
-                Log.d(LOG_TAG, "Using database to fetch favorite details...");
-                reviews = new ArrayList<Review>();
-                Uri reviewsProviderUri = baseProviderUri.buildUpon().appendPath("reviews")
-                        .build();
-                Cursor reviewsCursor = getContext().getContentResolver().query(reviewsProviderUri, REVIEWS_COLUMNS, null,
-                        null, null);
-
-                if (reviewsCursor.moveToFirst()) {
-                    do {
-                        String reviewAuthor = reviewsCursor.getString(COL_REVIEW_AUTHOR);
-                        String reviewBody = reviewsCursor.getString(COL_REVIEW_BODY);
-                        reviews.add(new Review(reviewAuthor, reviewBody));
-                    } while (reviewsCursor.moveToNext());
-                } else {
-                    Log.d(LOG_TAG, "No reviews found in DB!");
-                }
-                reviewsCursor.close();
-            } else {
-                reviews = getReviewsFromNetwork(reviewsUri);
-            }
-            return reviews;
-        }
-
-
-        protected List<Review> getReviewsFromNetwork(Uri reviewsUri) {
-            Log.d(LOG_TAG, "in getReviewsFromNetwork");
-            Log.d(LOG_TAG, "in getReviewsFromNetwork with mIsFavorite=" + mIsFavorite);
-            List<Review> reviews = null;
-            String reviewsJsonStr = null;
-            HttpURLConnection urlConnection = null;
-            BufferedReader reader = null;
-            try {
-                URL url = new URL(reviewsUri.toString());
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-
-                InputStream inputStream = urlConnection.getInputStream();
-                StringBuffer buffer = new StringBuffer();
-
-                reader = new BufferedReader(new InputStreamReader(inputStream));
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                    // But it does make debugging a *lot* easier if you print out the completed
-                    // buffer for debugging.
-                    buffer.append(line).append("\n");
-                }
-
-                if (buffer.length() == 0) {
-                    // Stream was empty.  No point in parsing.
-                    return null;
-                }
-                reviewsJsonStr = buffer.toString();
-                reviews = getReviewDataFromJson(reviewsJsonStr);
-
-            } catch (IOException | JSONException e) {
-                e.printStackTrace();
-            } finally {
-                if (urlConnection != null) {
-                    urlConnection.disconnect();
-                }
-            }
-            return reviews;
-        }
-
-
-        @Override
-        protected void onPostExecute(List<Review> result) {
-            super.onPostExecute(result);
-            mReviewsFetched = true;
-            if (result != null) {
-                mReviews = result;
-                Log.d(LOG_TAG, String.format("Number of reviews fetched: %s", result.size()));
-                updateReviewsUI(mReviews);
-            }
-        }
-
-
-        private List<Review> getReviewDataFromJson(String reviewsJsonStr) throws JSONException {
-            final String TMDB_REVIEWS_LIST = "results";
-            final String TMDB_REVIEW_AUTHOR = "author";
-            final String TMDB_REVIEW_BODY = "content";
-
-            JSONObject reviewsJson = new JSONObject(reviewsJsonStr);
-            JSONArray reviewsArray = reviewsJson.getJSONArray(TMDB_REVIEWS_LIST);
-
-            List<Review> reviewList = new ArrayList<>();
-
-            for (int i = 0; i < reviewsArray.length(); i++) {
-                // TODO: is this efficient? Fetching the ith element each time does not seem so.
-                // TODO: No map method on JSONArray?..
-                JSONObject reviewJson = reviewsArray.getJSONObject(i);
-                String author = reviewJson.getString(TMDB_REVIEW_AUTHOR);
-                String body = reviewJson.getString(TMDB_REVIEW_BODY);
-
-                Review review = new Review();
-                review.author = author;
-                review.body = body;
-                reviewList.add(review);
-            }
-            return reviewList;
-        }
-    }
 }
 
